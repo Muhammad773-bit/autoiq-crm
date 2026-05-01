@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap');
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --gold:#C9A84C; --gold-light:#E8C97A; --gold-dim:rgba(201,168,76,0.12);
+  --ink:#0E0F11; --ink2:#161820; --ink3:#1E2028; --ink4:#252833;
+  --line:rgba(255,255,255,0.07); --line2:rgba(255,255,255,0.04);
+  --text:#F0EEE8; --text-2:#9B9890; --text-3:#5E5C58;
+  --green:#3DCB82; --red:#E05252; --blue:#4A90E8; --orange:#E8874A; --purple:#9B72CF;
+}
+body { font-family:'DM Sans',sans-serif; background:var(--ink); color:var(--text); font-size:13px; line-height:1.5; }
+
+.header {
+  background:var(--ink2);
+  border-bottom:0.5px solid var(--line);
+  padding:14px 20px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+
+.back-btn {
+  font-size:11px; color:var(--text-3); cursor:pointer;
+  background:none; border:none; font-family:'DM Sans',sans-serif;
+  display:flex; align-items:center; gap:4px;
+}
+.back-btn:hover { color:var(--gold); }
+
+.biz-avatar {
+  width:42px; height:42px; border-radius:10px;
+  background:linear-gradient(135deg,#C9A84C 0%,#7A5A1A 100%);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Syne',sans-serif; font-size:14px; font-weight:800; color:var(--ink);
+  flex-shrink:0;
+}
+
+.biz-info { flex:1; }
+.biz-name { font-family:'Syne',sans-serif; font-size:17px; font-weight:800; color:var(--text); }
+.biz-meta { font-size:11px; color:var(--text-3); display:flex; align-items:center; gap:8px; margin-top:2px; }
+.biz-meta-dot { width:3px; height:3px; border-radius:50%; background:var(--text-3); }
+
+.header-actions { display:flex; gap:6px; align-items:center; }
+
+.h-btn {
+  padding:6px 12px; border-radius:7px; border:0.5px solid var(--line);
+  background:transparent; color:var(--text-2); font-size:11.5px; cursor:pointer;
+  display:flex; align-items:center; gap:5px; transition:all 0.15s;
+  font-family:'DM Sans',sans-serif;
+}
+.h-btn:hover { border-color:var(--gold); color:var(--gold); }
+.h-btn.primary { background:var(--gold); color:var(--ink); border-color:var(--gold); font-weight:500; }
+.h-btn.primary:hover { background:var(--gold-light); }
+.h-btn.call { background:rgba(61,203,130,0.15); color:var(--green); border-color:rgba(61,203,130,0.3); }
+.h-btn.wa { background:rgba(37,211,102,0.12); color:#25D366; border-color:rgba(37,211,102,0.25); }
+
+.stage-pill {
+  font-size:10px; padding:3px 10px; border-radius:10px; font-weight:500;
+  background:rgba(61,203,130,0.15); color:var(--green); margin-left:8px;
+}
+
+.layout { display:grid; grid-template-columns:240px 1fr; min-height:calc(100vh - 70px); }
+
+/* LEFT PANEL */
+.left-panel {
+  background:var(--ink2);
+  border-right:0.5px solid var(--line);
+  overflow-y:auto;
+}
+
+.score-section {
+  padding:16px;
+  border-bottom:0.5px solid var(--line);
+}
+
+.ai-score-big {
+  display:flex; align-items:center; gap:12px; margin-bottom:12px;
+}
+
+.score-ring {
+  position:relative; width:56px; height:56px; flex-shrink:0;
+}
+
+.score-ring svg { width:56px; height:56px; transform:rotate(-90deg); }
+
+.score-ring-text {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  font-family:'Syne',sans-serif; font-size:15px; font-weight:800; color:var(--green);
+}
+
+.score-label { font-size:12px; font-weight:500; color:var(--text); margin-bottom:2px; }
+.score-sub { font-size:10px; color:var(--text-3); }
+
+.score-breakdown { display:flex; flex-direction:column; gap:7px; }
+
+.sb-item { display:flex; align-items:center; gap:7px; }
+.sb-label { font-size:10.5px; color:var(--text-2); flex:1; }
+.sb-bar { width:60px; height:4px; background:var(--ink3); border-radius:2px; overflow:hidden; }
+.sb-fill { height:100%; border-radius:2px; }
+.sb-num { font-size:10px; color:var(--text-3); min-width:22px; text-align:right; }
+
+.info-section {
+  padding:14px 16px;
+  border-bottom:0.5px solid var(--line);
+}
+
+.info-section-title {
+  font-size:9px; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--text-3); margin-bottom:10px; font-weight:400;
+}
+
+.info-row {
+  display:flex; align-items:flex-start; gap:8px; margin-bottom:8px;
+}
+
+.info-icon { font-size:12px; margin-top:1px; flex-shrink:0; opacity:0.6; }
+.info-label { font-size:10px; color:var(--text-3); min-width:70px; }
+.info-value { font-size:11.5px; color:var(--text); flex:1; }
+.info-value a { color:var(--blue); text-decoration:none; }
+
+.tag { font-size:9.5px; padding:2px 6px; border-radius:4px; }
+
+.weakness-list { display:flex; flex-direction:column; gap:5px; }
+.wl-item {
+  display:flex; align-items:center; gap:7px;
+  padding:7px 9px; background:var(--ink3); border-radius:6px;
+  border-left:2px solid var(--red);
+  cursor:pointer;
+}
+.wl-item.warn { border-left-color:var(--orange); }
+.wl-icon { font-size:11px; }
+.wl-text { font-size:11px; color:var(--text-2); flex:1; }
+.wl-impact { font-size:9px; color:var(--text-3); }
+
+/* RIGHT PANEL */
+.right-panel { overflow-y:auto; }
+
+.tabs {
+  display:flex; gap:0; border-bottom:0.5px solid var(--line);
+  background:var(--ink2); position:sticky; top:0; z-index:5; overflow-x:auto;
+}
+
+.tab {
+  padding:10px 16px; font-size:12px; color:var(--text-3);
+  cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-0.5px;
+  transition:all 0.15s; white-space:nowrap;
+}
+.tab:hover { color:var(--text-2); }
+.tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+
+.tab-content { padding:16px 18px; display:none; }
+.tab-content.active { display:block; }
+
+.section-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+.section-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px; }
+
+.card {
+  background:var(--ink2); border:0.5px solid var(--line); border-radius:10px; overflow:hidden;
+}
+
+.card-header {
+  padding:10px 14px; border-bottom:0.5px solid var(--line);
+  display:flex; align-items:center; justify-content:space-between;
+}
+
+.card-title { font-size:11.5px; font-weight:500; color:var(--text); }
+.card-body { padding:12px 14px; }
+
+.metric-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+
+.metric-box {
+  background:var(--ink3); border-radius:7px; padding:10px;
+  text-align:center;
+}
+
+.metric-val {
+  font-family:'Syne',sans-serif; font-size:18px; font-weight:800;
+  color:var(--text); line-height:1;
+}
+
+.metric-lbl { font-size:9.5px; color:var(--text-3); margin-top:4px; }
+
+.check-row {
+  display:flex; align-items:center; gap:8px; padding:6px 0;
+  border-bottom:0.5px solid var(--line2); font-size:12px;
+}
+.check-row:last-child { border-bottom:none; }
+.check-yes { color:var(--green); }
+.check-no { color:var(--red); }
+.check-warn { color:var(--orange); }
+.check-label { color:var(--text-2); flex:1; }
+.check-val { font-size:11px; color:var(--text-3); }
+
+.score-gauge {
+  display:flex; align-items:center; gap:8px; margin-bottom:8px;
+}
+.gauge-label { font-size:11.5px; color:var(--text-2); flex:1; }
+.gauge-bar { width:80px; height:6px; background:var(--ink3); border-radius:3px; overflow:hidden; }
+.gauge-fill { height:100%; border-radius:3px; }
+.gauge-num { font-size:11px; font-weight:500; min-width:28px; text-align:right; }
+
+/* AI PITCH */
+.ai-pitch {
+  background:var(--gold-dim); border:0.5px solid rgba(201,168,76,0.25);
+  border-radius:10px; padding:14px 16px; margin-bottom:12px;
+}
+.ai-pitch-label { font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--gold); margin-bottom:8px; font-weight:500; }
+.ai-pitch-text { font-size:12px; color:var(--text-2); line-height:1.7; }
+
+/* COMPETITOR TABLE */
+.comp-table { width:100%; border-collapse:collapse; }
+.comp-table th {
+  font-size:10px; color:var(--text-3); letter-spacing:0.06em;
+  text-transform:uppercase; padding:7px 10px; text-align:left;
+  border-bottom:0.5px solid var(--line); font-weight:400;
+}
+.comp-table td { padding:9px 10px; font-size:12px; border-bottom:0.5px solid var(--line2); }
+.comp-table tr:last-child td { border-bottom:none; }
+.comp-row:hover { background:var(--line2); }
+
+/* GMAIL FIELDS */
+.gmail-field {
+  display:flex; align-items:center; gap:8px; padding:8px 0;
+  border-bottom:0.5px solid var(--line2);
+}
+.gmail-field:last-child { border-bottom:none; }
+.gf-label { font-size:11px; color:var(--text-3); min-width:140px; }
+.gf-value { font-size:12px; color:var(--text); flex:1; }
+.gf-badge { font-size:9.5px; padding:2px 7px; border-radius:4px; }
+
+/* TIMELINE */
+.timeline { position:relative; }
+.tl-item {
+  display:flex; gap:12px; margin-bottom:14px;
+}
+.tl-dot-wrap {
+  display:flex; flex-direction:column; align-items:center;
+  padding-top:3px;
+}
+.tl-dot {
+  width:8px; height:8px; border-radius:50%; flex-shrink:0;
+}
+.tl-line { flex:1; width:1px; background:var(--line); margin-top:4px; }
+.tl-body { flex:1; }
+.tl-event { font-size:12px; color:var(--text); margin-bottom:2px; }
+.tl-sub { font-size:10.5px; color:var(--text-3); }
+.tl-time { font-size:10px; color:var(--text-3); margin-top:3px; }
+
+/* NOTE INPUT */
+.note-input {
+  width:100%; background:var(--ink3); border:0.5px solid var(--line);
+  border-radius:8px; padding:10px 12px; color:var(--text); font-size:12px;
+  font-family:'DM Sans',sans-serif; resize:none; outline:none; margin-bottom:8px;
+}
+.note-input:focus { border-color:rgba(201,168,76,0.4); }
+
+::-webkit-scrollbar { width:3px; height:3px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--line); border-radius:2px; }
+
+.service-tags { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; }
+.st { font-size:10px; padding:3px 9px; border-radius:5px; cursor:pointer; transition:all 0.15s; }
+.st.selected { border:0.5px solid var(--gold); background:var(--gold-dim); color:var(--gold); }
+.st.unsel { border:0.5px solid var(--line); color:var(--text-3); background:transparent; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <button class="back-btn">← Back to Leads</button>
+  <div class="biz-avatar">AF</div>
+  <div class="biz-info">
+    <div class="biz-name">Al Futtaim Motors Dubai <span class="stage-pill">● Interested</span></div>
+    <div class="biz-meta">
+      <span>Premium Showroom</span><span class="biz-meta-dot"></span>
+      <span>Deira, Dubai</span><span class="biz-meta-dot"></span>
+      <span>Est. 2008 · 3 Branches</span><span class="biz-meta-dot"></span>
+      <span style="color:var(--gold);">AED 25K+ budget</span>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="h-btn call" onclick="sendPrompt('Show me the full agent calling script for Al Futtaim Motors with talking points based on their website SEO weaknesses and competitor gap analysis')">📞 Call Now</button>
+    <button class="h-btn wa">WhatsApp</button>
+    <button class="h-btn">Gmail</button>
+    <button class="h-btn primary" onclick="sendPrompt('Generate a full proposal document for Al Futtaim Motors Dubai including their current digital weaknesses, competitor analysis, recommended service package, ROI estimate, and 90-day roadmap')">Generate Proposal</button>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="left-panel">
+
+    <!-- AI SCORE -->
+    <div class="score-section">
+      <div class="ai-score-big">
+        <div class="score-ring">
+          <svg viewBox="0 0 56 56" fill="none">
+            <circle cx="28" cy="28" r="22" stroke="var(--ink3)" stroke-width="5" fill="none"/>
+            <circle cx="28" cy="28" r="22" stroke="#3DCB82" stroke-width="5" fill="none"
+              stroke-dasharray="138.2" stroke-dashoffset="30.4" stroke-linecap="round"/>
+          </svg>
+          <div class="score-ring-text">92</div>
+        </div>
+        <div>
+          <div class="score-label">AI Priority Score</div>
+          <div class="score-sub">Agent Priority #1 · Dubai</div>
+          <div style="font-size:10px;color:var(--green);margin-top:3px;">▲ Very High Urgency</div>
+        </div>
+      </div>
+      <div class="score-breakdown">
+        <div class="sb-item">
+          <span class="sb-label">Close Prob.</span>
+          <div class="sb-bar"><div class="sb-fill" style="width:78%;background:var(--green);"></div></div>
+          <span class="sb-num">78%</span>
+        </div>
+        <div class="sb-item">
+          <span class="sb-label">Budget Signal</span>
+          <div class="sb-bar"><div class="sb-fill" style="width:90%;background:var(--gold);"></div></div>
+          <span class="sb-num">90</span>
+        </div>
+        <div class="sb-item">
+          <span class="sb-label">Digital Weakness</span>
+          <div class="sb-bar"><div class="sb-fill" style="width:82%;background:var(--red);"></div></div>
+          <span class="sb-num">82</span>
+        </div>
+        <div class="sb-item">
+          <span class="sb-label">Email Reach</span>
+          <div class="sb-bar"><div class="sb-fill" style="width:95%;background:var(--blue);"></div></div>
+          <span class="sb-num">95</span>
+        </div>
+        <div class="sb-item">
+          <span class="sb-label">Growth Potential</span>
+          <div class="sb-bar"><div class="sb-fill" style="width:85%;background:var(--purple);"></div></div>
+          <span class="sb-num">85</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTACTS -->
+    <div class="info-section">
+      <div class="info-section-title">Contacts</div>
+      <div class="info-row">
+        <span class="info-icon">👤</span>
+        <div>
+          <div class="info-label" style="font-size:10px;color:var(--text-3);">Owner</div>
+          <div class="info-value">Mohammed Al-Rashidi</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <span class="info-icon">📞</span>
+        <div>
+          <div class="info-label" style="font-size:10px;color:var(--text-3);">Mobile</div>
+          <div class="info-value" style="color:var(--green);">+971 55 234 8891</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <span class="info-icon">📧</span>
+        <div>
+          <div class="info-label" style="font-size:10px;color:var(--text-3);">Best Email</div>
+          <div class="info-value" style="color:var(--blue);font-size:11px;">m.rashidi@alfuttaim.ae</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <span class="info-icon">📧</span>
+        <div>
+          <div class="info-label" style="font-size:10px;color:var(--text-3);">Gmail Found</div>
+          <div class="info-value" style="color:var(--blue);font-size:11px;">alfuttaimdxb@gmail.com</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <span class="info-icon">💬</span>
+        <div>
+          <div class="info-label" style="font-size:10px;color:var(--text-3);">WhatsApp</div>
+          <div class="info-value" style="color:#25D366;">+971 55 234 8891</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--text-3);padding:6px 0 0;display:flex;align-items:center;gap:5px;">
+        <span style="color:var(--green);">●</span> Best time: Sat–Sun 10–12pm
+      </div>
+    </div>
+
+    <!-- LOCATION -->
+    <div class="info-section">
+      <div class="info-section-title">Location & Business</div>
+      <div class="info-row">
+        <span class="info-icon">📍</span>
+        <div>
+          <div class="info-value">Al Ittihad Rd, Deira, Dubai</div>
+          <div style="font-size:10px;color:var(--blue);margin-top:2px;cursor:pointer;">View on Maps ↗</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <span class="info-icon">🚗</span>
+        <div>
+          <div class="info-value">~180 cars in stock</div>
+          <div style="font-size:10px;color:var(--text-3);">Luxury: 40% · SUV: 35%</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <span class="info-icon">🏢</span>
+        <div>
+          <div class="info-value">3 Branches · 45+ Staff</div>
+          <div style="font-size:10px;color:var(--text-3);">Finance · Insurance · Trade-in</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEAKNESSES -->
+    <div class="info-section">
+      <div class="info-section-title">Detected Weaknesses</div>
+      <div class="weakness-list">
+        <div class="wl-item">
+          <span class="wl-icon">🔴</span>
+          <span class="wl-text">No SEO setup</span>
+          <span class="wl-impact">Critical</span>
+        </div>
+        <div class="wl-item">
+          <span class="wl-icon">🔴</span>
+          <span class="wl-text">Mobile speed 38/100</span>
+          <span class="wl-impact">Critical</span>
+        </div>
+        <div class="wl-item warn">
+          <span class="wl-icon">🟠</span>
+          <span class="wl-text">No lead capture forms</span>
+          <span class="wl-impact">High</span>
+        </div>
+        <div class="wl-item warn">
+          <span class="wl-icon">🟠</span>
+          <span class="wl-text">Instagram engagement 0.8%</span>
+          <span class="wl-impact">High</span>
+        </div>
+        <div class="wl-item warn">
+          <span class="wl-icon">🟠</span>
+          <span class="wl-text">No Google Ads presence</span>
+          <span class="wl-impact">High</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SERVICES TO PITCH -->
+    <div class="info-section">
+      <div class="info-section-title">Recommended Services</div>
+      <div class="service-tags">
+        <span class="st selected">SEO</span>
+        <span class="st selected">Google Ads</span>
+        <span class="st selected">Lead Forms</span>
+        <span class="st unsel">Website Rebuild</span>
+        <span class="st selected">Meta Ads</span>
+        <span class="st unsel">Reputation</span>
+        <span class="st unsel">CRM Setup</span>
+      </div>
+      <div style="margin-top:10px;padding:8px 10px;background:var(--ink3);border-radius:7px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:11px;color:var(--text-3);">Est. Package</span>
+        <span style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--gold);">AED 22,000/mo</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('overview')">Overview</div>
+      <div class="tab" onclick="switchTab('website')">Website Audit</div>
+      <div class="tab" onclick="switchTab('social')">Social Audit</div>
+      <div class="tab" onclick="switchTab('gmail')">Gmail Intel</div>
+      <div class="tab" onclick="switchTab('competitors')">Competitors</div>
+      <div class="tab" onclick="switchTab('timeline')">Activity</div>
+    </div>
+
+    <!-- OVERVIEW TAB -->
+    <div class="tab-content active" id="tab-overview">
+
+      <div class="ai-pitch" style="margin-bottom:14px;">
+        <div class="ai-pitch-label">◈ AI Pre-Call Intelligence Brief</div>
+        <div class="ai-pitch-text">
+          Al Futtaim Motors has 180+ cars in stock but loses an estimated 40–60 leads/month because their website has no lead forms and loads in 8.2s on mobile. Competitor <strong style="color:var(--text);">Al Sayegh Motors</strong> is ranking #1 for "used cars Dubai" and has a full SEO-optimized inventory system. Their Instagram posts get 0.8% engagement vs industry average 3.2%. <strong style="color:var(--gold);">Pitch angle:</strong> Show them the traffic they're losing to competitors. Lead with SEO + Google Ads ROI calculator. Best outreach: domain email, then WhatsApp.
+        </div>
+      </div>
+
+      <div class="section-grid-3">
+        <div style="background:var(--ink2);border:0.5px solid var(--line);border-radius:10px;padding:12px;">
+          <div style="font-size:9px;color:var(--text-3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Website Score</div>
+          <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--red);">34</div>
+          <div style="font-size:10px;color:var(--text-3);margin-top:2px;">Poor · Action needed</div>
+        </div>
+        <div style="background:var(--ink2);border:0.5px solid var(--line);border-radius:10px;padding:12px;">
+          <div style="font-size:9px;color:var(--text-3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Social Score</div>
+          <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--orange);">52</div>
+          <div style="font-size:10px;color:var(--text-3);margin-top:2px;">Average · Weak engagement</div>
+        </div>
+        <div style="background:var(--ink2);border:0.5px solid var(--line);border-radius:10px;padding:12px;">
+          <div style="font-size:9px;color:var(--text-3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">GBP Rating</div>
+          <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--gold);">4.3 ★</div>
+          <div style="font-size:10px;color:var(--text-3);margin-top:2px;">284 reviews · Owner replies: No</div>
+        </div>
+      </div>
+
+      <div class="section-grid">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Business Operations</div></div>
+          <div class="card-body">
+            <div class="check-row"><span class="check-yes">✓</span><span class="check-label">Finance Available</span></div>
+            <div class="check-row"><span class="check-yes">✓</span><span class="check-label">Insurance Available</span></div>
+            <div class="check-row"><span class="check-yes">✓</span><span class="check-label">Trade-in Available</span></div>
+            <div class="check-row"><span class="check-yes">✓</span><span class="check-label">Export Available</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Delivery Available</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Electric Car Stock</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Google Business Profile</div></div>
+          <div class="card-body">
+            <div class="check-row"><span class="check-yes">✓</span><span class="check-label">GBP Exists</span><span class="check-val">Verified</span></div>
+            <div class="check-row"><span class="check-yes">●</span><span class="check-label">Reviews Count</span><span class="check-val">284</span></div>
+            <div class="check-row"><span class="check-yes">●</span><span class="check-label">Star Rating</span><span class="check-val" style="color:var(--gold);">4.3 ★</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Owner Replies</span><span class="check-val">Never</span></div>
+            <div class="check-row"><span class="check-warn">~</span><span class="check-label">Photos</span><span class="check-val">12 photos</span></div>
+            <div class="check-row"><span class="check-warn">~</span><span class="check-label">Map Ranking</span><span class="check-val">#7 "used cars Dubai"</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- WEBSITE TAB -->
+    <div class="tab-content" id="tab-website">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div style="background:var(--ink2);border:0.5px solid var(--line);border-radius:10px;padding:12px;text-align:center;">
+          <div style="font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Desktop Speed</div>
+          <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--orange);">62</div>
+          <div style="height:4px;background:var(--ink3);border-radius:2px;margin-top:8px;overflow:hidden;"><div style="height:100%;width:62%;background:var(--orange);border-radius:2px;"></div></div>
+        </div>
+        <div style="background:var(--ink2);border:0.5px solid var(--line);border-radius:10px;padding:12px;text-align:center;">
+          <div style="font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Mobile Speed</div>
+          <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--red);">38</div>
+          <div style="height:4px;background:var(--ink3);border-radius:2px;margin-top:8px;overflow:hidden;"><div style="height:100%;width:38%;background:var(--red);border-radius:2px;"></div></div>
+        </div>
+        <div style="background:var(--ink2);border:0.5px solid var(--line);border-radius:10px;padding:12px;text-align:center;">
+          <div style="font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">SEO Score</div>
+          <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--red);">22</div>
+          <div style="height:4px;background:var(--ink3);border-radius:2px;margin-top:8px;overflow:hidden;"><div style="height:100%;width:22%;background:var(--red);border-radius:2px;"></div></div>
+        </div>
+      </div>
+
+      <div class="section-grid">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Technical</div></div>
+          <div class="card-body">
+            <div class="check-row"><span class="check-yes">✓</span><span class="check-label">HTTPS</span><span class="check-val">Secure</span></div>
+            <div class="check-row"><span class="check-warn">~</span><span class="check-label">Domain Age</span><span class="check-val">6 years</span></div>
+            <div class="check-row"><span class="check-warn">~</span><span class="check-label">CMS</span><span class="check-val">WordPress</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Sitemap</span><span class="check-val">Missing</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Schema Markup</span><span class="check-val">None</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">404 Pages</span><span class="check-val" style="color:var(--red);">14 found</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Lead Generation</div></div>
+          <div class="card-body">
+            <div class="check-row"><span class="check-warn">~</span><span class="check-label">Contact Form</span><span class="check-val">Basic only</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Car Inquiry Form</span><span class="check-val">Missing</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Test Drive Form</span><span class="check-val">Missing</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Finance Calculator</span><span class="check-val">Missing</span></div>
+            <div class="check-row"><span class="check-warn">~</span><span class="check-label">WhatsApp Button</span><span class="check-val">Broken</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Live Chat</span><span class="check-val">None</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">SEO Details</div></div>
+          <div class="card-body">
+            <div class="check-row"><span class="check-warn">~</span><span class="check-label">Title Tags</span><span class="check-val">Partial</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Meta Descriptions</span><span class="check-val">All missing</span></div>
+            <div class="check-row"><span class="check-warn">~</span><span class="check-label">H1 Count</span><span class="check-val">8 pages w/ H1</span></div>
+            <div class="check-row"><span class="check-warn">~</span><span class="check-label">Indexed Pages</span><span class="check-val">~34 indexed</span></div>
+            <div class="check-row"><span class="check-warn">~</span><span class="check-label">Backlinks</span><span class="check-val">~42 links</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Blog / Content</span><span class="check-val">None</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Auto-Inventory Features</div></div>
+          <div class="card-body">
+            <div class="check-row"><span class="check-warn">~</span><span class="check-label">Inventory Listing</span><span class="check-val">Basic</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Search Filters</span><span class="check-val">None</span></div>
+            <div class="check-row"><span class="check-warn">~</span><span class="check-label">Price Display</span><span class="check-val">Partial</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">EMI Calculator</span><span class="check-val">Missing</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Car Compare Tool</span><span class="check-val">None</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Video Walkaround</span><span class="check-val">None</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-pitch">
+        <div class="ai-pitch-label">◈ Website Opportunity Summary</div>
+        <div class="ai-pitch-text">Estimated 50–70 leads/month lost due to 8.2s mobile load time and zero lead capture. 14 broken pages damaging SEO. Competitor Al Sayegh Motors has full inventory filters, EMI calculator, and ranks #1 for "used cars Dubai Deira". Recommended immediate fix: SEO + lead forms = AED 4,500/mo. Full website rebuild ROI estimated 4–6x in 6 months.</div>
+      </div>
+    </div>
+
+    <!-- SOCIAL TAB -->
+    <div class="tab-content" id="tab-social">
+      <div class="section-grid">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Instagram</div>
+            <span style="font-size:10px;color:var(--text-3);">@alfuttaim_motors</span>
+          </div>
+          <div class="card-body">
+            <div class="metric-grid" style="margin-bottom:12px;">
+              <div class="metric-box">
+                <div class="metric-val" style="font-size:16px;">12.4K</div>
+                <div class="metric-lbl">Followers</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-val" style="color:var(--red);font-size:16px;">0.8%</div>
+                <div class="metric-lbl">Eng. Rate</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-val" style="font-size:16px;">284</div>
+                <div class="metric-lbl">Total Posts</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-val" style="color:var(--orange);font-size:16px;">3 days</div>
+                <div class="metric-lbl">Post Freq.</div>
+              </div>
+            </div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">WhatsApp in Bio</span></div>
+            <div class="check-row"><span class="check-warn">~</span><span class="check-label">Website in Bio</span><span class="check-val">Broken URL</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Email in Bio</span></div>
+            <div class="check-row"><span class="check-warn">~</span><span class="check-label">Branding Score</span><span class="check-val">5.5/10</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Facebook</div>
+            <span style="font-size:10px;color:var(--text-3);">Al Futtaim Motors Official</span>
+          </div>
+          <div class="card-body">
+            <div class="metric-grid" style="margin-bottom:12px;">
+              <div class="metric-box">
+                <div class="metric-val" style="font-size:16px;">8.9K</div>
+                <div class="metric-lbl">Followers</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-val" style="color:var(--orange);font-size:16px;">4.1</div>
+                <div class="metric-lbl">Review Score</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-val" style="font-size:16px;">7.2K</div>
+                <div class="metric-lbl">Page Likes</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-val" style="color:var(--text-3);font-size:16px;">5 days</div>
+                <div class="metric-lbl">Post Freq.</div>
+              </div>
+            </div>
+            <div class="check-row"><span class="check-yes">✓</span><span class="check-label">Messenger Enabled</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Lead Form Ads</span><span class="check-val">No ads running</span></div>
+            <div class="check-row"><span class="check-warn">~</span><span class="check-label">CTA Button</span><span class="check-val">Send Message</span></div>
+            <div class="check-row"><span class="check-no">✗</span><span class="check-label">Email Visible</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GMAIL TAB -->
+    <div class="tab-content" id="tab-gmail">
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-header">
+          <div class="card-title">Email Intelligence</div>
+          <span style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(61,203,130,0.15);color:var(--green);">3 emails found</span>
+        </div>
+        <div class="card-body">
+          <div class="gmail-field">
+            <span class="gf-label">Best Outreach Email</span>
+            <span class="gf-value" style="color:var(--blue);">m.rashidi@alfuttaim.ae</span>
+            <span class="gf-badge" style="background:rgba(61,203,130,0.15);color:var(--green);">Verified ✓</span>
+          </div>
+          <div class="gmail-field">
+            <span class="gf-label">Gmail Found</span>
+            <span class="gf-value" style="color:var(--blue);">alfuttaimdxb@gmail.com</span>
+            <span class="gf-badge" style="background:rgba(74,144,232,0.12);color:var(--blue);">From Facebook</span>
+          </div>
+          <div class="gmail-field">
+            <span class="gf-label">info@ Present</span>
+            <span class="gf-value" style="color:var(--blue);">info@alfuttaimmotors.ae</span>
+            <span class="gf-badge" style="background:rgba(201,168,76,0.12);color:var(--gold);">Catch-all</span>
+          </div>
+          <div class="gmail-field">
+            <span class="gf-label">Google Workspace</span>
+            <span class="gf-value" style="color:var(--green);">Detected ✓</span>
+            <span class="gf-badge" style="background:rgba(61,203,130,0.12);color:var(--green);">Business Email</span>
+          </div>
+          <div class="gmail-field">
+            <span class="gf-label">Cold Outreach Priority</span>
+            <span class="gf-value">Domain email → Gmail fallback</span>
+            <span class="gf-badge" style="background:var(--gold-dim);color:var(--gold);">High Priority</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">Outreach History</div></div>
+        <div class="card-body">
+          <div class="gmail-field">
+            <span class="gf-label">First Email Sent</span>
+            <span class="gf-value">April 14, 2026</span>
+          </div>
+          <div class="gmail-field">
+            <span class="gf-label">Last Email Sent</span>
+            <span class="gf-value">April 28, 2026</span>
+          </div>
+          <div class="gmail-field">
+            <span class="gf-label">Email Opened</span>
+            <span class="gf-value" style="color:var(--green);">Yes — 3 times</span>
+          </div>
+          <div class="gmail-field">
+            <span class="gf-label">Replied</span>
+            <span class="gf-value" style="color:var(--green);">Yes — April 29</span>
+          </div>
+          <div class="gmail-field">
+            <span class="gf-label">Sequence Stage</span>
+            <span class="gf-value">Step 3 of 5</span>
+            <span class="gf-badge" style="background:rgba(155,114,207,0.15);color:var(--purple);">Follow-up due</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPETITORS TAB -->
+    <div class="tab-content" id="tab-competitors">
+      <div class="ai-pitch" style="margin-bottom:12px;">
+        <div class="ai-pitch-label">◈ Competitor Gap — Use This in Pitch</div>
+        <div class="ai-pitch-text">Al Sayegh Motors (competitor, Deira) ranks #1 for "used cars Dubai" and gets ~340 monthly organic leads. They have full inventory SEO, 3.8% Instagram engagement, and run Google Ads. Showing this gap to Al Futtaim closes 68% of pitches in similar accounts.</div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Competitor Analysis — Dubai Used Car Market</div></div>
+        <div style="overflow-x:auto;">
+          <table class="comp-table">
+            <thead>
+              <tr>
+                <th>Dealer</th>
+                <th>Area</th>
+                <th>Website</th>
+                <th>IG Followers</th>
+                <th>GBP Reviews</th>
+                <th>Ads Running</th>
+                <th>SEO</th>
+                <th>Strength</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background:rgba(201,168,76,0.04);">
+                <td style="font-weight:500;color:var(--gold);">Al Futtaim ← You</td>
+                <td>Deira</td>
+                <td><span style="color:var(--orange);">34/100</span></td>
+                <td>12.4K</td>
+                <td style="color:var(--gold);">284 · 4.3★</td>
+                <td style="color:var(--red);">None</td>
+                <td style="color:var(--red);">22/100</td>
+                <td style="color:var(--text-3);">Brand name</td>
+              </tr>
+              <tr class="comp-row">
+                <td style="font-weight:500;">Al Sayegh Motors</td>
+                <td>Deira</td>
+                <td style="color:var(--green);">81/100</td>
+                <td>28.1K</td>
+                <td>412 · 4.7★</td>
+                <td style="color:var(--green);">Google + Meta</td>
+                <td style="color:var(--green);">74/100</td>
+                <td style="color:var(--green);">Full digital</td>
+              </tr>
+              <tr class="comp-row">
+                <td style="font-weight:500;">Auto Gallery Dubai</td>
+                <td>Al Quoz</td>
+                <td style="color:var(--orange);">58/100</td>
+                <td>19.2K</td>
+                <td>298 · 4.5★</td>
+                <td style="color:var(--gold);">Meta Ads only</td>
+                <td style="color:var(--orange);">41/100</td>
+                <td style="color:var(--text-3);">Social active</td>
+              </tr>
+              <tr class="comp-row">
+                <td style="font-weight:500;">Emirates Car Hub</td>
+                <td>JLT</td>
+                <td style="color:var(--orange);">44/100</td>
+                <td>8.4K</td>
+                <td>189 · 4.2★</td>
+                <td style="color:var(--red);">None</td>
+                <td style="color:var(--red);">28/100</td>
+                <td style="color:var(--text-3);">Location only</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIMELINE TAB -->
+    <div class="tab-content" id="tab-timeline">
+      <div style="margin-bottom:14px;">
+        <textarea class="note-input" rows="3" placeholder="Add call notes, meeting outcomes, or intel..."></textarea>
+        <div style="display:flex;gap:6px;">
+          <button class="h-btn primary" style="font-size:11px;">Save Note</button>
+          <button class="h-btn" style="font-size:11px;">Log Call</button>
+          <button class="h-btn" style="font-size:11px;">Schedule Follow-up</button>
+        </div>
+      </div>
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot-wrap">
+            <div class="tl-dot" style="background:var(--green);"></div>
+            <div class="tl-line"></div>
+          </div>
+          <div class="tl-body">
+            <div class="tl-event">Email replied — Interested in SEO + Google Ads package</div>
+            <div class="tl-sub">Sara Al-Zaabi · Replied to sequence step 3</div>
+            <div class="tl-time">April 29, 2026 · 11:34am</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot-wrap">
+            <div class="tl-dot" style="background:var(--blue);"></div>
+            <div class="tl-line"></div>
+          </div>
+          <div class="tl-body">
+            <div class="tl-event">Follow-up email sent — Competitor SEO report attached</div>
+            <div class="tl-sub">Ahmad Al-Maktoum · Email opened 3 times</div>
+            <div class="tl-time">April 28, 2026 · 9:15am</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot-wrap">
+            <div class="tl-dot" style="background:var(--gold);"></div>
+            <div class="tl-line"></div>
+          </div>
+          <div class="tl-body">
+            <div class="tl-event">First call made — Owner busy, asked for WhatsApp</div>
+            <div class="tl-sub">Ahmad Al-Maktoum · 2min 14sec</div>
+            <div class="tl-time">April 20, 2026 · 10:02am</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot-wrap">
+            <div class="tl-dot" style="background:var(--purple);"></div>
+          </div>
+          <div class="tl-body">
+            <div class="tl-event">Lead scraped & scored by AI — Assigned to Ahmad</div>
+            <div class="tl-sub">Auto-scraper · Website + Instagram + Gmail extracted</div>
+            <div class="tl-time">April 14, 2026 · 8:45am</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ============================================================
+// AutoIQ CRM — Lead Detail Backend Integration
+// ============================================================
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ---- Tab switching ----
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const ids = ['overview','website','social','gmail','competitors','timeline'];
+    t.classList.toggle('active', ids[i] === id);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => {
+    c.classList.toggle('active', c.id === 'tab-' + id);
+  });
+}
+
+// ---- Helpers ----
+function scoreColor(score) {
+  if (score >= 80) return 'var(--gold)';
+  if (score >= 60) return 'var(--blue)';
+  return 'var(--red)';
+}
+function timeAgo(dt) {
+  if (!dt) return '';
+  const diff = Math.floor((Date.now() - new Date(dt).getTime()) / 60000);
+  if (diff < 1) return 'just now';
+  if (diff < 60) return diff + 'm ago';
+  if (diff < 1440) return Math.floor(diff / 60) + 'h ago';
+  return Math.floor(diff / 1440) + 'd ago';
+}
+function formatDate(dt) {
+  if (!dt) return '—';
+  return new Date(dt).toLocaleDateString('en-AE', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+function formatTime(dt) {
+  if (!dt) return '';
+  return new Date(dt).toLocaleTimeString('en-AE', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+function checkIcon(val) {
+  return val ? '<span class="check-yes">✓</span>' : '<span class="check-no">✗</span>';
+}
+
+// ---- Get lead ID from URL ----
+function getLeadId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('id');
+}
+
+// ---- Load Complete Lead Detail ----
+async function loadLeadDetail(leadId) {
+  try {
+    const { data: lead, error } = await sb
+      .from('leads')
+      .select('*')
+      .eq('id', leadId)
+      .single();
+    if (error) throw error;
+    if (!lead) return;
+
+    // Update header
+    const nameEl = document.querySelector('.biz-name');
+    if (nameEl) nameEl.textContent = lead.business_name || '—';
+    const typeEl = document.querySelector('.biz-type');
+    if (typeEl) typeEl.textContent = (lead.dealer_type || 'used_car').replace(/_/g, ' ') + ' · ' + (lead.emirate || '') + ' · ' + (lead.city || '');
+
+    // Update score ring
+    const scoreEl = document.querySelector('.score-num');
+    if (scoreEl) {
+      scoreEl.textContent = lead.lead_score || 0;
+      scoreEl.style.color = scoreColor(lead.lead_score);
+    }
+
+    // Update status badge
+    const stagePills = document.querySelectorAll('.stage-pill');
+    stagePills.forEach(pill => {
+      pill.textContent = (lead.status || 'new').replace(/_/g, ' ');
+    });
+
+    // Update sidebar contact info
+    updateSidebarContact(lead);
+
+    // Update AI analysis
+    updateAIAnalysis(lead);
+
+    // Load related data
+    loadWebsiteAudit(leadId);
+    loadSocialAudit(leadId);
+    loadEmailIntelligence(leadId);
+    loadCompetitors(leadId);
+    loadActivities(leadId);
+  } catch (err) {
+    console.error('Lead detail load error:', err);
+  }
+}
+
+function updateSidebarContact(lead) {
+  const contactFields = document.querySelectorAll('.contact-field');
+  const contactData = [
+    { label: 'Owner', value: lead.owner_name },
+    { label: 'Phone', value: lead.phone },
+    { label: 'WhatsApp', value: lead.whatsapp },
+    { label: 'Email', value: lead.email_primary },
+    { label: 'Website', value: lead.website },
+  ];
+  contactFields.forEach((field, i) => {
+    if (contactData[i]) {
+      const valEl = field.querySelector('.cf-value');
+      if (valEl) valEl.textContent = contactData[i].value || '—';
+    }
+  });
+}
+
+function updateAIAnalysis(lead) {
+  // Update recommended services
+  const servicesContainer = document.querySelector('.recommended-services');
+  if (servicesContainer && lead.recommended_services) {
+    servicesContainer.innerHTML = lead.recommended_services.map(s =>
+      `<span class="tag" style="background:var(--gold-dim);color:var(--gold);">${s}</span>`
+    ).join('');
+  }
+
+  // Update AI pitch
+  const pitchEl = document.querySelector('.ai-pitch-text');
+  if (pitchEl && lead.ai_analysis) {
+    pitchEl.textContent = lead.ai_analysis;
+  }
+
+  // Update weakness scores
+  const weaknessItems = document.querySelectorAll('.weakness-item');
+  const weaknesses = [
+    { label: 'Website', score: lead.website_score },
+    { label: 'Social', score: lead.social_presence_score },
+    { label: 'SEO', score: lead.seo_score },
+    { label: 'Branding', score: lead.branding_score },
+  ];
+  weaknessItems.forEach((item, i) => {
+    if (weaknesses[i]) {
+      const valEl = item.querySelector('.wk-val');
+      if (valEl) {
+        valEl.textContent = weaknesses[i].score + '/100';
+        valEl.style.color = scoreColor(weaknesses[i].score);
+      }
+    }
+  });
+}
+
+// ---- Website Audit Tab ----
+async function loadWebsiteAudit(leadId) {
+  try {
+    const { data, error } = await sb
+      .from('website_audits')
+      .select('*')
+      .eq('lead_id', leadId)
+      .order('audited_at', { ascending: false })
+      .limit(1)
+      .single();
+    if (error || !data) return;
+
+    // Update website score cards if they exist
+    const metricVals = document.querySelectorAll('#tab-website .metric-val');
+    if (metricVals.length >= 4) {
+      metricVals[0].textContent = data.overall_score || '—';
+      metricVals[0].style.color = scoreColor(data.overall_score);
+      metricVals[1].textContent = data.mobile_score || '—';
+      metricVals[2].textContent = data.seo_score || '—';
+      metricVals[3].textContent = data.speed_score || '—';
+    }
+  } catch (err) {
+    console.error('Website audit load error:', err);
+  }
+}
+
+// ---- Social Audit Tab ----
+async function loadSocialAudit(leadId) {
+  try {
+    const { data, error } = await sb
+      .from('social_audits')
+      .select('*')
+      .eq('lead_id', leadId)
+      .order('audited_at', { ascending: false })
+      .limit(1)
+      .single();
+    if (error || !data) return;
+
+    // Update Instagram metrics
+    const igMetrics = document.querySelectorAll('#tab-social .metric-val');
+    if (igMetrics.length >= 4) {
+      igMetrics[0].textContent = data.ig_followers ? (data.ig_followers > 1000 ? (data.ig_followers / 1000).toFixed(1) + 'K' : data.ig_followers) : '—';
+      igMetrics[1].textContent = data.ig_engagement_rate ? data.ig_engagement_rate + '%' : '—';
+      igMetrics[2].textContent = data.ig_posts || '—';
+      igMetrics[3].textContent = data.ig_posting_freq || '—';
+    }
+  } catch (err) {
+    console.error('Social audit load error:', err);
+  }
+}
+
+// ---- Email Intelligence Tab ----
+async function loadEmailIntelligence(leadId) {
+  try {
+    const { data, error } = await sb
+      .from('email_intelligence')
+      .select('*')
+      .eq('lead_id', leadId)
+      .limit(1)
+      .single();
+    if (error || !data) return;
+
+    const emailFields = document.querySelectorAll('#tab-gmail .gf-value');
+    if (emailFields.length >= 5) {
+      emailFields[0].textContent = data.best_outreach_email || '—';
+      emailFields[1].textContent = data.gmail_found?.[0] || '—';
+      emailFields[2].textContent = data.info_email || '—';
+      emailFields[3].textContent = data.google_workspace ? 'Detected ✓' : 'Not detected';
+      emailFields[4].textContent = data.best_outreach_email ? 'Domain email → Gmail fallback' : '—';
+    }
+  } catch (err) {
+    console.error('Email intel load error:', err);
+  }
+}
+
+// ---- Competitors Tab ----
+async function loadCompetitors(leadId) {
+  try {
+    const { data, error } = await sb
+      .from('competitors')
+      .select('*')
+      .eq('lead_id', leadId)
+      .order('rank');
+    if (error || !data) return;
+
+    const tbody = document.querySelector('#tab-competitors .comp-table tbody');
+    if (!tbody) return;
+
+    // Keep first row (the lead itself), append competitors
+    const firstRow = tbody.querySelector('tr:first-child');
+    const rows = data.map(c => `
+      <tr class="comp-row">
+        <td style="font-weight:500;">${c.name || '—'}</td>
+        <td>${c.city || c.emirate || '—'}</td>
+        <td style="color:${scoreColor(c.website_score || 0)};">${c.website_score || '—'}/100</td>
+        <td>${c.instagram_followers ? (c.instagram_followers / 1000).toFixed(1) + 'K' : '—'}</td>
+        <td>${c.google_reviews || '—'} · ${c.google_rating || '—'}★</td>
+        <td style="color:${c.ad_presence ? 'var(--green)' : 'var(--red)'};">${c.ad_presence ? 'Running' : 'None'}</td>
+        <td style="color:${scoreColor(c.seo_score || 0)};">${c.seo_score || '—'}/100</td>
+        <td style="color:var(--text-3);">${c.branding_strength || '—'}</td>
+      </tr>
+    `).join('');
+
+    if (firstRow) {
+      tbody.innerHTML = firstRow.outerHTML + rows;
+    } else {
+      tbody.innerHTML = rows;
+    }
+  } catch (err) {
+    console.error('Competitors load error:', err);
+  }
+}
+
+// ---- Activity Timeline ----
+async function loadActivities(leadId) {
+  try {
+    const { data, error } = await sb
+      .from('activities')
+      .select('*, team_members(full_name)')
+      .eq('lead_id', leadId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error || !data) return;
+
+    const timeline = document.querySelector('#tab-timeline .timeline');
+    if (!timeline) return;
+
+    const colorMap = { email: 'var(--blue)', call: 'var(--gold)', note: 'var(--green)', stage_change: 'var(--purple)', system: 'var(--purple)', proposal: 'var(--green)', meeting: 'var(--blue)', whatsapp: 'var(--green)' };
+
+    timeline.innerHTML = data.map((a, i) => `
+      <div class="tl-item">
+        <div class="tl-dot-wrap">
+          <div class="tl-dot" style="background:${colorMap[a.activity_type] || 'var(--text-3)'};"></div>
+          ${i < data.length - 1 ? '<div class="tl-line"></div>' : ''}
+        </div>
+        <div class="tl-body">
+          <div class="tl-event">${a.title || a.activity_type}</div>
+          <div class="tl-sub">${a.team_members?.full_name || 'System'} ${a.notes ? '· ' + a.notes : ''}</div>
+          <div class="tl-time">${formatDate(a.created_at)} · ${formatTime(a.created_at)}</div>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Activities load error:', err);
+  }
+}
+
+// ---- Actions ----
+async function updateLeadStage(leadId, newStage, reason) {
+  try {
+    const { data: lead } = await sb.from('leads').select('status').eq('id', leadId).single();
+    const oldStage = lead?.status;
+
+    const { error } = await sb.from('leads').update({
+      status: newStage,
+      pipeline_stage: newStage,
+      updated_at: new Date().toISOString()
+    }).eq('id', leadId);
+    if (error) throw error;
+
+    await sb.from('activities').insert({
+      lead_id: leadId,
+      activity_type: 'stage_change',
+      title: `Stage changed: ${oldStage} → ${newStage}`,
+      stage_before: oldStage,
+      stage_after: newStage,
+      notes: reason || ''
+    });
+
+    loadLeadDetail(leadId);
+  } catch (err) {
+    console.error('Stage update error:', err);
+    alert('Failed to update stage: ' + err.message);
+  }
+}
+
+async function saveNote(leadId, noteText, agentId) {
+  if (!noteText || !noteText.trim()) return;
+  try {
+    const { error } = await sb.from('activities').insert({
+      lead_id: leadId,
+      agent_id: agentId || null,
+      activity_type: 'note',
+      title: 'Note added',
+      notes: noteText
+    });
+    if (error) throw error;
+
+    const textarea = document.querySelector('.note-input');
+    if (textarea) textarea.value = '';
+    loadActivities(leadId);
+  } catch (err) {
+    console.error('Save note error:', err);
+    alert('Failed to save note: ' + err.message);
+  }
+}
+
+async function triggerAIAnalysis(leadId) {
+  try {
+    const { data, error } = await sb.functions.invoke('analyze-lead', {
+      body: { lead_id: parseInt(leadId) }
+    });
+    if (error) throw error;
+    alert('AI analysis complete');
+    loadLeadDetail(leadId);
+  } catch (err) {
+    console.error('AI analysis error:', err);
+    alert('AI analysis failed: ' + err.message);
+  }
+}
+
+async function generateEmail(leadId, step) {
+  try {
+    const { data, error } = await sb.functions.invoke('generate-email', {
+      body: { lead_id: parseInt(leadId), email_step: step || 1 }
+    });
+    if (error) throw error;
+    if (data?.email) {
+      alert('Email generated:\n\nSubject: ' + data.email.subject + '\n\n' + data.email.body);
+    }
+  } catch (err) {
+    console.error('Email generation error:', err);
+    alert('Email generation failed: ' + err.message);
+  }
+}
+
+async function generateProposal(leadId, agentId) {
+  try {
+    const { data, error } = await sb.functions.invoke('generate-proposal', {
+      body: { lead_id: parseInt(leadId), agent_id: agentId || 1 }
+    });
+    if (error) throw error;
+    alert('Proposal generated! Ref: ' + (data?.proposal_ref || ''));
+    loadLeadDetail(leadId);
+  } catch (err) {
+    console.error('Proposal generation error:', err);
+    alert('Proposal generation failed: ' + err.message);
+  }
+}
+
+// ---- Wire up UI buttons ----
+function wireButtons(leadId) {
+  // Save Note button
+  const saveNoteBtn = document.querySelector('.h-btn.primary');
+  if (saveNoteBtn) {
+    saveNoteBtn.addEventListener('click', () => {
+      const textarea = document.querySelector('.note-input');
+      if (textarea) saveNote(leadId, textarea.value);
+    });
+  }
+
+  // Stage change buttons (header pills)
+  const stageDropdown = document.querySelector('.stage-actions');
+  if (stageDropdown) {
+    const stages = ['interested', 'meeting_booked', 'proposal_sent', 'negotiation', 'won', 'lost'];
+    stageDropdown.innerHTML = stages.map(s =>
+      `<button class="h-btn" onclick="updateLeadStage(${leadId}, '${s}')" style="font-size:10px;">${s.replace(/_/g, ' ')}</button>`
+    ).join('');
+  }
+}
+
+// ---- Init ----
+document.addEventListener('DOMContentLoaded', () => {
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+    console.warn('AutoIQ: Configure SUPABASE_URL and SUPABASE_ANON_KEY to connect to backend');
+    return;
+  }
+  const leadId = getLeadId();
+  if (leadId) {
+    loadLeadDetail(leadId);
+    wireButtons(leadId);
+  }
+});
+</script>
+
+</body>
+</html>

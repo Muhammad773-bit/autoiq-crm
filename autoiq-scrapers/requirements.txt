@@ -1,0 +1,12 @@
+playwright==1.44.0
+requests==2.31.0
+supabase==2.4.0
+python-dotenv==1.0.0
+fake-useragent==1.4.0
+phonenumbers==8.13.0
+tldextract==5.1.2
+schedule==1.2.1
+loguru==0.7.2
+beautifulsoup4==4.12.3
+lxml==5.1.2
+dnspython==2.6.1

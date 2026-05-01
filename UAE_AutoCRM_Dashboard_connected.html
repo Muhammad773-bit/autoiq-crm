@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap');
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --gold: #C9A84C;
+  --gold-light: #E8C97A;
+  --gold-dim: rgba(201,168,76,0.12);
+  --gold-dim2: rgba(201,168,76,0.06);
+  --ink: #0E0F11;
+  --ink2: #161820;
+  --ink3: #1E2028;
+  --ink4: #252833;
+  --line: rgba(255,255,255,0.07);
+  --line2: rgba(255,255,255,0.04);
+  --text: #F0EEE8;
+  --text-2: #9B9890;
+  --text-3: #5E5C58;
+  --green: #3DCB82;
+  --red: #E05252;
+  --blue: #4A90E8;
+  --orange: #E8874A;
+  --purple: #9B72CF;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--ink);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.app { display: flex; min-height: 100vh; }
+
+/* SIDEBAR */
+.sidebar {
+  width: 200px;
+  background: var(--ink2);
+  border-right: 0.5px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 10;
+}
+
+.logo {
+  padding: 20px 18px 16px;
+  border-bottom: 0.5px solid var(--line);
+}
+
+.logo-mark {
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--gold);
+  letter-spacing: 0.02em;
+}
+
+.logo-sub {
+  font-size: 10px;
+  color: var(--text-3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+
+.nav-section {
+  padding: 0 12px;
+  margin-bottom: 4px;
+}
+
+.nav-label {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 8px 6px 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 12.5px;
+  transition: all 0.15s;
+  margin-bottom: 1px;
+}
+
+.nav-item:hover { background: var(--line); color: var(--text); }
+.nav-item.active { background: var(--gold-dim); color: var(--gold); }
+
+.nav-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.nav-badge {
+  margin-left: auto;
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 10px;
+  min-width: 16px;
+  text-align: center;
+}
+
+.agent-card {
+  margin: 10px;
+  background: var(--ink3);
+  border: 0.5px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.agent-av {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold) 0%, #8B6914 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 7px;
+}
+
+.agent-name { font-size: 12px; font-weight: 500; color: var(--text); }
+.agent-role { font-size: 10px; color: var(--text-3); }
+
+.agent-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 7px;
+  font-size: 10px;
+  color: var(--green);
+}
+
+.dot { width: 6px; height: 6px; border-radius: 50%; }
+.dot.green { background: var(--green); }
+
+/* MAIN */
+.main {
+  flex: 1;
+  margin-left: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  height: 52px;
+  background: var(--ink2);
+  border-bottom: 0.5px solid var(--line);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.page-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.breadcrumb {
+  font-size: 11px;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.bc-sep { opacity: 0.4; }
+
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tb-btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 0.5px solid var(--line);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 11.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.tb-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+.tb-btn.primary {
+  background: var(--gold);
+  color: var(--ink);
+  border-color: var(--gold);
+  font-weight: 500;
+}
+
+.tb-btn.primary:hover { background: var(--gold-light); }
+
+.content { padding: 20px 24px; flex: 1; }
+
+/* KPI ROW */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.kpi {
+  background: var(--ink2);
+  border: 0.5px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition: border-color 0.15s;
+  cursor: pointer;
+}
+
+.kpi:hover { border-color: rgba(201,168,76,0.3); }
+
+.kpi-label {
+  font-size: 10px;
+  color: var(--text-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.kpi-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 5px;
+}
+
+.kpi-delta {
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.kpi-delta.up { color: var(--green); }
+.kpi-delta.down { color: var(--red); }
+.kpi-delta.neutral { color: var(--text-3); }
+
+/* GRID LAYOUT */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+/* PANEL */
+.panel {
+  background: var(--ink2);
+  border: 0.5px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 0.5px solid var(--line);
+}
+
+.panel-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.panel-action {
+  font-size: 10.5px;
+  color: var(--gold);
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* PIPELINE */
+.pipeline-cols {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  padding: 14px;
+}
+
+.pipeline-col {
+  flex: 1;
+  min-width: 110px;
+  padding: 0 6px;
+}
+
+.pipeline-col-head {
+  font-size: 10px;
+  color: var(--text-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pipeline-col-count {
+  background: var(--ink3);
+  color: var(--text-2);
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 8px;
+}
+
+.pipeline-card {
+  background: var(--ink3);
+  border: 0.5px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 10px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pipeline-card:hover { border-color: var(--gold-dim2); transform: translateY(-1px); }
+
+.pc-name { font-size: 11.5px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+.pc-city { font-size: 10px; color: var(--text-3); }
+
+.pc-score {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.score-bar-bg {
+  flex: 1;
+  height: 3px;
+  background: var(--ink4);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.score-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--gold);
+}
+
+.score-num { font-size: 9px; color: var(--text-3); min-width: 22px; text-align: right; }
+
+.pc-tag {
+  display: inline-block;
+  font-size: 9px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  margin-top: 5px;
+}
+
+/* LEADS TABLE */
+.leads-table { width: 100%; border-collapse: collapse; }
+
+.leads-table th {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 0.5px solid var(--line);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.leads-table td {
+  padding: 9px 12px;
+  border-bottom: 0.5px solid var(--line2);
+  color: var(--text);
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.leads-table tr:last-child td { border-bottom: none; }
+
+.leads-table tbody tr {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.leads-table tbody tr:hover { background: var(--line2); }
+
+.biz-name { font-weight: 500; font-size: 12.5px; }
+.biz-sub { font-size: 10px; color: var(--text-3); margin-top: 1px; }
+
+.emirate-badge {
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--ink3);
+  color: var(--text-2);
+  border: 0.5px solid var(--line);
+  white-space: nowrap;
+}
+
+.status-pill {
+  font-size: 9.5px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.s-new { background: rgba(74,144,232,0.15); color: #4A90E8; }
+.s-contacted { background: rgba(201,168,76,0.15); color: var(--gold); }
+.s-interested { background: rgba(61,203,130,0.15); color: var(--green); }
+.s-pitched { background: rgba(155,114,207,0.15); color: var(--purple); }
+.s-meeting { background: rgba(232,135,74,0.15); color: var(--orange); }
+
+.score-chip {
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.score-high { color: var(--green); }
+.score-mid { color: var(--gold); }
+.score-low { color: var(--red); }
+
+.weakness-flags {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.wf {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(224,82,82,0.12);
+  color: #E05252;
+  white-space: nowrap;
+}
+
+.wf.warn {
+  background: rgba(232,135,74,0.12);
+  color: var(--orange);
+}
+
+/* AUDIT SCORE RING */
+.audit-panel { padding: 16px 18px; }
+
+.audit-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.audit-label { font-size: 11.5px; color: var(--text-2); flex: 1; }
+
+.audit-bar-bg {
+  width: 100px;
+  height: 5px;
+  background: var(--ink3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.audit-bar-fill { height: 100%; border-radius: 3px; }
+
+.audit-score-num {
+  font-size: 11px;
+  font-weight: 500;
+  min-width: 28px;
+  text-align: right;
+}
+
+/* ACTIVITY FEED */
+.activity-list { padding: 4px 0; }
+
+.activity-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 18px;
+  border-bottom: 0.5px solid var(--line2);
+  transition: background 0.1s;
+}
+
+.activity-item:last-child { border-bottom: none; }
+.activity-item:hover { background: var(--line2); }
+
+.act-icon {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.act-body { flex: 1; }
+.act-title { font-size: 12px; color: var(--text); margin-bottom: 2px; }
+.act-sub { font-size: 10.5px; color: var(--text-3); }
+.act-time { font-size: 10px; color: var(--text-3); white-space: nowrap; margin-left: auto; }
+
+/* FILTER BAR */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 0.5px solid var(--line);
+  overflow-x: auto;
+}
+
+.filter-chip {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 0.5px solid var(--line);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.filter-chip:hover { border-color: var(--gold-dim); color: var(--gold); }
+.filter-chip.active { background: var(--gold-dim); border-color: rgba(201,168,76,0.4); color: var(--gold); }
+
+/* MINI CHART */
+.mini-chart { padding: 14px 18px 0; }
+
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 70px;
+}
+
+.bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.bar {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  background: var(--gold-dim);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.bar:hover { background: var(--gold); }
+
+.bar-lbl { font-size: 9px; color: var(--text-3); }
+
+/* SCORE OVERVIEW */
+.score-circle {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: conic-gradient(var(--green) 0% 78%, var(--ink3) 78%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.score-inner {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--ink2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--green);
+}
+
+/* SCRAPING STATUS */
+.scrape-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--line2);
+}
+
+.scrape-row:last-child { border-bottom: none; }
+
+.scrape-source { font-size: 11.5px; color: var(--text-2); flex: 1; }
+
+.scrape-status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.scrape-count {
+  font-size: 11px;
+  color: var(--text-3);
+  min-width: 40px;
+  text-align: right;
+}
+
+/* AGENT LEADERBOARD */
+.agent-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--line2);
+}
+
+.agent-row:last-child { border-bottom: none; }
+
+.agent-rank {
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-3);
+  width: 16px;
+}
+
+.agent-av-sm {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'Syne', sans-serif;
+}
+
+.agent-info { flex: 1; }
+.agent-nm { font-size: 12px; font-weight: 500; }
+.agent-stat { font-size: 10px; color: var(--text-3); }
+
+.agent-revenue {
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+/* FLOATING CALL WIDGET */
+.call-widget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--ink2);
+  border: 0.5px solid var(--gold);
+  border-radius: 14px;
+  padding: 14px 16px;
+  width: 240px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  z-index: 100;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.call-widget:hover { transform: translateY(-2px); }
+
+.cw-label { font-size: 9px; color: var(--gold); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+.cw-name { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 1px; }
+.cw-biz { font-size: 11px; color: var(--text-3); margin-bottom: 10px; }
+
+.cw-actions { display: flex; gap: 6px; }
+
+.cw-btn {
+  flex: 1;
+  padding: 6px;
+  border-radius: 7px;
+  border: none;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+}
+
+.cw-call { background: var(--green); color: #fff; }
+.cw-wa { background: rgba(37,211,102,0.15); color: #25D366; border: 0.5px solid rgba(37,211,102,0.3); }
+.cw-email { background: var(--ink3); color: var(--text-2); border: 0.5px solid var(--line); }
+
+/* TABS */
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 0.5px solid var(--line);
+}
+
+.tab {
+  padding: 10px 16px;
+  font-size: 12px;
+  color: var(--text-3);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -0.5px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.tab:hover { color: var(--text-2); }
+.tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* AI SUMMARY */
+.ai-summary {
+  background: var(--gold-dim);
+  border: 0.5px solid rgba(201,168,76,0.2);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 14px 18px;
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.ai-label {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+
+.tag-row { display: flex; gap: 4px; flex-wrap: wrap; }
+.tag { font-size: 9.5px; padding: 2px 6px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">AUTOIQ ×</div>
+    <div class="logo-sub">UAE Sales Intelligence</div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-section">
+      <div class="nav-label">Command</div>
+      <div class="nav-item active">
+        <span class="nav-icon">◈</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showLeadsView()">
+        <span class="nav-icon">⊞</span> Lead Database
+        <span class="nav-badge">847</span>
+      </div>
+      <div class="nav-item" onclick="showPipelineView()">
+        <span class="nav-icon">◧</span> Pipeline
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Intelligence</div>
+      <div class="nav-item">
+        <span class="nav-icon">◉</span> Scraping Engine
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">◎</span> Website Audit
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">◌</span> Social Audit
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">◍</span> Gmail Intel
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">◐</span> Competitors
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Operations</div>
+      <div class="nav-item">
+        <span class="nav-icon">◑</span> Agent Workspace
+        <span class="nav-badge" style="background:var(--red);color:#fff;">3</span>
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">◒</span> Proposals
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">◓</span> Follow-ups
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">◔</span> Revenue
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">◕</span> Reports
+      </div>
+    </div>
+  </nav>
+
+  <div class="agent-card">
+    <div class="agent-av">AM</div>
+    <div class="agent-name">Ahmad Al-Maktoum</div>
+    <div class="agent-role">Senior Sales Agent</div>
+    <div class="agent-status">
+      <span class="dot green"></span> Active · 14 tasks today
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main" id="mainArea">
+
+  <div class="topbar">
+    <div>
+      <div class="page-title">Command Center</div>
+      <div class="breadcrumb">
+        <span>AutoIQ</span><span class="bc-sep">›</span><span>Dashboard</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="tb-btn">⟳ Sync Data</button>
+      <button class="tb-btn">⚡ Run Scraper</button>
+      <button class="tb-btn primary" onclick="sendPrompt('Show me full details of the Lead Detail Page for Al Futtaim Motors Dubai')">+ Add Lead</button>
+    </div>
+  </div>
+
+  <div class="content" id="dashboardContent">
+
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="kpi-label">Total Leads</div>
+        <div class="kpi-value">847</div>
+        <div class="kpi-delta up">▲ 12% this week</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Hot Leads</div>
+        <div class="kpi-value" style="color:var(--gold)">94</div>
+        <div class="kpi-delta up">▲ 8 new today</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Pipeline Value</div>
+        <div class="kpi-value">AED 2.1M</div>
+        <div class="kpi-delta up">▲ 23% vs last mo.</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Won This Month</div>
+        <div class="kpi-value" style="color:var(--green)">18</div>
+        <div class="kpi-delta neutral">Target: 25</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Emails Scraped</div>
+        <div class="kpi-value">2,341</div>
+        <div class="kpi-delta up">▲ 341 today</div>
+      </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="grid-2">
+
+      <!-- LEFT: LEADS TABLE -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">⚡ Hot Leads — AI Priority Ranked</div>
+          <button class="panel-action" onclick="showLeadsView()">View all 847 →</button>
+        </div>
+        <div class="filter-bar">
+          <button class="filter-chip active">All UAE</button>
+          <button class="filter-chip">Dubai</button>
+          <button class="filter-chip">Ajman</button>
+          <button class="filter-chip">Sharjah</button>
+          <button class="filter-chip">Abu Dhabi</button>
+          <button class="filter-chip">No Website</button>
+          <button class="filter-chip">Gmail Only</button>
+          <button class="filter-chip">Follow-up Today</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="leads-table">
+            <thead>
+              <tr>
+                <th>Business</th>
+                <th>Emirate</th>
+                <th>Status</th>
+                <th>AI Score</th>
+                <th>Weaknesses</th>
+                <th>Budget</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr onclick="showLeadDetail('Al Futtaim Motors')">
+                <td>
+                  <div class="biz-name">Al Futtaim Motors</div>
+                  <div class="biz-sub">Premium Showroom · Deira</div>
+                </td>
+                <td><span class="emirate-badge">Dubai</span></td>
+                <td><span class="status-pill s-interested">Interested</span></td>
+                <td><span class="score-chip score-high">92</span></td>
+                <td>
+                  <div class="weakness-flags">
+                    <span class="wf">No SEO</span>
+                    <span class="wf warn">Slow site</span>
+                  </div>
+                </td>
+                <td style="color:var(--gold);font-size:11px;font-weight:500;">AED 25K+</td>
+              </tr>
+              <tr onclick="showLeadDetail('Gulf Cars Trading')">
+                <td>
+                  <div class="biz-name">Gulf Cars Trading</div>
+                  <div class="biz-sub">Used Car Dealer · Al Quoz</div>
+                </td>
+                <td><span class="emirate-badge">Dubai</span></td>
+                <td><span class="status-pill s-pitched">Pitched</span></td>
+                <td><span class="score-chip score-high">88</span></td>
+                <td>
+                  <div class="weakness-flags">
+                    <span class="wf">No website</span>
+                    <span class="wf">No social</span>
+                  </div>
+                </td>
+                <td style="color:var(--gold);font-size:11px;font-weight:500;">AED 15K+</td>
+              </tr>
+              <tr onclick="sendPrompt('Show me the lead detail page for Emirates Auto Hub Ajman including website audit and social audit scores')">
+                <td>
+                  <div class="biz-name">Emirates Auto Hub</div>
+                  <div class="biz-sub">Car Importer · Al Jurf</div>
+                </td>
+                <td><span class="emirate-badge">Ajman</span></td>
+                <td><span class="status-pill s-contacted">Contacted</span></td>
+                <td><span class="score-chip score-mid">74</span></td>
+                <td>
+                  <div class="weakness-flags">
+                    <span class="wf warn">Weak SEO</span>
+                    <span class="wf">No forms</span>
+                  </div>
+                </td>
+                <td style="color:var(--text-2);font-size:11px;">AED 8–12K</td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="biz-name">Sharjah Auto City</div>
+                  <div class="biz-sub">Multi-Brand Showroom</div>
+                </td>
+                <td><span class="emirate-badge">Sharjah</span></td>
+                <td><span class="status-pill s-new">New</span></td>
+                <td><span class="score-chip score-mid">71</span></td>
+                <td>
+                  <div class="weakness-flags">
+                    <span class="wf">Dead website</span>
+                  </div>
+                </td>
+                <td style="color:var(--text-2);font-size:11px;">AED 10K+</td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="biz-name">Capital Motors AD</div>
+                  <div class="biz-sub">Luxury Dealer · Khalidiyah</div>
+                </td>
+                <td><span class="emirate-badge">Abu Dhabi</span></td>
+                <td><span class="status-pill s-meeting">Meeting</span></td>
+                <td><span class="score-chip score-high">87</span></td>
+                <td>
+                  <div class="weakness-flags">
+                    <span class="wf warn">Low IG</span>
+                    <span class="wf warn">No CRM</span>
+                  </div>
+                </td>
+                <td style="color:var(--gold);font-size:11px;font-weight:500;">AED 20K+</td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="biz-name">Al Hamra Cars</div>
+                  <div class="biz-sub">Car Broker · Hamriyah</div>
+                </td>
+                <td><span class="emirate-badge">Sharjah</span></td>
+                <td><span class="status-pill s-new">New</span></td>
+                <td><span class="score-chip score-low">58</span></td>
+                <td>
+                  <div class="weakness-flags">
+                    <span class="wf">Gmail only</span>
+                    <span class="wf">No ads</span>
+                  </div>
+                </td>
+                <td style="color:var(--text-3);font-size:11px;">AED 4–7K</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+
+        <!-- PIPELINE MINI -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">◧ Pipeline Overview</div>
+            <button class="panel-action" onclick="showPipelineView()">Full board →</button>
+          </div>
+          <div style="padding:12px 14px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+              <div style="background:var(--ink3);border-radius:8px;padding:10px;text-align:center;">
+                <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#4A90E8;">34</div>
+                <div style="font-size:9px;color:var(--text-3);margin-top:2px;">Contacted</div>
+              </div>
+              <div style="background:var(--ink3);border-radius:8px;padding:10px;text-align:center;">
+                <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--gold);">19</div>
+                <div style="font-size:9px;color:var(--text-3);margin-top:2px;">Interested</div>
+              </div>
+              <div style="background:var(--ink3);border-radius:8px;padding:10px;text-align:center;">
+                <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--green);">18</div>
+                <div style="font-size:9px;color:var(--text-3);margin-top:2px;">Won</div>
+              </div>
+            </div>
+
+            <div style="margin-top:12px;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                <span style="font-size:11px;color:var(--text-3);">Monthly target</span>
+                <span style="font-size:11px;color:var(--gold);">18 / 25 won</span>
+              </div>
+              <div style="height:5px;background:var(--ink3);border-radius:3px;overflow:hidden;">
+                <div style="height:100%;width:72%;background:var(--gold);border-radius:3px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SCRAPING STATUS -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">◉ Scraping Engine</div>
+            <span style="font-size:9px;padding:2px 7px;border-radius:10px;background:rgba(61,203,130,0.15);color:var(--green);">● Live</span>
+          </div>
+          <div style="padding:10px 18px;">
+            <div class="scrape-row">
+              <span class="scrape-source">Website Audit</span>
+              <span class="scrape-count">412 done</span>
+              <span class="scrape-status-dot" style="background:var(--green);"></span>
+            </div>
+            <div class="scrape-row">
+              <span class="scrape-source">Instagram Scrape</span>
+              <span class="scrape-count">389 done</span>
+              <span class="scrape-status-dot" style="background:var(--green);"></span>
+            </div>
+            <div class="scrape-row">
+              <span class="scrape-source">Gmail Extraction</span>
+              <span class="scrape-count">2,341 emails</span>
+              <span class="scrape-status-dot" style="background:var(--gold);"></span>
+            </div>
+            <div class="scrape-row">
+              <span class="scrape-source">Google Maps Data</span>
+              <span class="scrape-count">761 GBP</span>
+              <span class="scrape-status-dot" style="background:var(--green);"></span>
+            </div>
+            <div class="scrape-row">
+              <span class="scrape-source">Facebook Pages</span>
+              <span class="scrape-count">290 running</span>
+              <span class="scrape-status-dot" style="background:var(--orange);animation:pulse 1.2s ease infinite;"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- AGENT LEADERBOARD -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">◑ Agent Leaderboard</div>
+            <button class="panel-action">This month</button>
+          </div>
+          <div style="padding:10px 18px;">
+            <div class="agent-row">
+              <span class="agent-rank">1</span>
+              <div class="agent-av-sm" style="background:rgba(201,168,76,0.2);color:var(--gold);">SA</div>
+              <div class="agent-info">
+                <div class="agent-nm">Sara Al-Zaabi</div>
+                <div class="agent-stat">11 won · 38 calls</div>
+              </div>
+              <span class="agent-revenue">AED 82K</span>
+            </div>
+            <div class="agent-row">
+              <span class="agent-rank">2</span>
+              <div class="agent-av-sm" style="background:rgba(74,144,232,0.2);color:#4A90E8;">AM</div>
+              <div class="agent-info">
+                <div class="agent-nm">Ahmad Al-Maktoum</div>
+                <div class="agent-stat">7 won · 29 calls</div>
+              </div>
+              <span class="agent-revenue">AED 54K</span>
+            </div>
+            <div class="agent-row">
+              <span class="agent-rank">3</span>
+              <div class="agent-av-sm" style="background:rgba(61,203,130,0.2);color:var(--green);">KN</div>
+              <div class="agent-info">
+                <div class="agent-nm">Khalid Nasser</div>
+                <div class="agent-stat">5 won · 22 calls</div>
+              </div>
+              <span class="agent-revenue">AED 38K</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BOTTOM ROW -->
+    <div class="grid-3">
+
+      <!-- REVENUE CHART -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">◔ Revenue This Quarter</div>
+        </div>
+        <div class="mini-chart">
+          <div class="bar-chart" id="revenueChart"></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0 10px;">
+            <span style="font-size:9px;color:var(--text-3);">Jan</span>
+            <span style="font-size:9px;color:var(--text-3);">Feb</span>
+            <span style="font-size:9px;color:var(--text-3);">Mar</span>
+            <span style="font-size:9px;color:var(--text-3);">Apr</span>
+            <span style="font-size:9px;color:var(--text-3);">May</span>
+            <span style="font-size:9px;color:var(--text-3);">Jun</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIVITY FEED -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">⚡ Live Activity</div>
+          <span style="font-size:9px;color:var(--green);">● Realtime</span>
+        </div>
+        <div class="activity-list">
+          <div class="activity-item">
+            <div class="act-icon" style="background:rgba(61,203,130,0.1);">✓</div>
+            <div class="act-body">
+              <div class="act-title">Al Futtaim Motors — Proposal Sent</div>
+              <div class="act-sub">Sara Al-Zaabi · AED 24,000 package</div>
+            </div>
+            <div class="act-time">2m ago</div>
+          </div>
+          <div class="activity-item">
+            <div class="act-icon" style="background:rgba(74,144,232,0.1);">@</div>
+            <div class="act-body">
+              <div class="act-title">New email scraped · Gulf Cars</div>
+              <div class="act-sub">gulfcars@gmail.com found on FB page</div>
+            </div>
+            <div class="act-time">9m ago</div>
+          </div>
+          <div class="activity-item">
+            <div class="act-icon" style="background:rgba(201,168,76,0.1);">★</div>
+            <div class="act-body">
+              <div class="act-title">Capital Motors AD scored 87</div>
+              <div class="act-sub">AI: High budget signal detected</div>
+            </div>
+            <div class="act-time">14m ago</div>
+          </div>
+          <div class="activity-item">
+            <div class="act-icon" style="background:rgba(224,82,82,0.1);">!</div>
+            <div class="act-body">
+              <div class="act-title">Website dead · 3 leads flagged</div>
+              <div class="act-sub">Sharjah Auto City · Al Hamra · Noor Cars</div>
+            </div>
+            <div class="act-time">22m ago</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI PITCH READY -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">◈ AI Pitch Summaries Ready</div>
+          <span style="font-size:10px;color:var(--text-3);">14 leads</span>
+        </div>
+        <div class="ai-summary">
+          <div class="ai-label">● AI Intelligence</div>
+          Gulf Cars Trading — No website, 2.1K IG followers, gmail only. Competitor Al Sayegh has full SEO + inventory site. Estimated budget AED 12–18K. Pitch: website + inventory system. Best time: Sat morning.
+        </div>
+        <div style="padding:0 18px 14px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="tag" style="background:rgba(74,144,232,0.1);color:#4A90E8;">Website Dev</span>
+          <span class="tag" style="background:rgba(61,203,130,0.1);color:var(--green);">SEO</span>
+          <span class="tag" style="background:rgba(201,168,76,0.1);color:var(--gold);">Meta Ads</span>
+          <span class="tag" style="background:rgba(155,114,207,0.1);color:var(--purple);">Social Mgmt</span>
+        </div>
+        <div style="padding:0 18px 14px;display:flex;gap:6px;">
+          <button class="tb-btn primary" style="flex:1;justify-content:center;" onclick="sendPrompt('Generate a full proposal for Gulf Cars Trading Dubai including website audit weaknesses, competitor analysis versus Al Sayegh Motors, recommended services, pricing, and 90-day roadmap')">Generate Proposal</button>
+          <button class="tb-btn" style="flex:1;justify-content:center;">View All 14</button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- FLOATING CALL WIDGET -->
+<div class="call-widget" onclick="sendPrompt('Show me the full Agent Workspace for calling Al Futtaim Motors including their full business intelligence, website audit scores, email found, and talking points')">
+  <div class="cw-label">● Next Priority Call</div>
+  <div class="cw-name">Mohammed Al-Rashidi</div>
+  <div class="cw-biz">Al Futtaim Motors · Dubai</div>
+  <div class="cw-actions">
+    <button class="cw-btn cw-call">📞 Call</button>
+    <button class="cw-btn cw-wa">WhatsApp</button>
+    <button class="cw-btn cw-email">Gmail</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// AutoIQ CRM — Dashboard Backend Integration
+// ============================================================
+// CONFIGURE: Set your Supabase project URL and anon key here
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ---- Chart (static for now, can be wired to revenue data) ----
+const bars = [45,62,38,71,88,55];
+const chart = document.getElementById('revenueChart');
+bars.forEach((v,i) => {
+  const wrap = document.createElement('div');
+  wrap.className = 'bar-wrap';
+  const bar = document.createElement('div');
+  bar.className = 'bar';
+  bar.style.height = (v * 0.9) + '%';
+  if (i === 4) bar.style.background = 'var(--gold)';
+  wrap.appendChild(bar);
+  chart.appendChild(wrap);
+});
+
+// ---- Helpers ----
+function scoreColor(score) {
+  if (score >= 80) return 'var(--gold)';
+  if (score >= 60) return 'var(--blue)';
+  return 'var(--red)';
+}
+function statusClass(status) {
+  const map = { new:'s-new', contacted:'s-contacted', interested:'s-interested', pitched:'s-pitched', meeting_booked:'s-meeting', ready_to_pitch:'s-new', proposal_sent:'s-pitched', negotiation:'s-interested', won:'s-new', lost:'s-contacted', recycle:'s-contacted', verified:'s-new', scraped:'s-new' };
+  return map[status] || 's-new';
+}
+function formatAED(val) {
+  if (val >= 1000000) return 'AED ' + (val / 1000000).toFixed(1) + 'M';
+  if (val >= 1000) return 'AED ' + (val / 1000).toFixed(0) + 'K';
+  return 'AED ' + val;
+}
+function formatBudget(tier) {
+  const map = { low: 'AED 5–10K', medium: 'AED 10–20K', high: 'AED 20–40K', enterprise: 'AED 40K+' };
+  return map[tier] || tier || '—';
+}
+function timeAgo(dt) {
+  if (!dt) return '';
+  const diff = Math.floor((Date.now() - new Date(dt).getTime()) / 60000);
+  if (diff < 1) return 'just now';
+  if (diff < 60) return diff + 'm ago';
+  if (diff < 1440) return Math.floor(diff / 60) + 'h ago';
+  return Math.floor(diff / 1440) + 'd ago';
+}
+
+// ---- Load Dashboard KPIs ----
+async function loadDashboardKPIs() {
+  try {
+    const { data, error } = await sb.from('dashboard_kpis').select('*').limit(1).single();
+    if (error) throw error;
+    const kpis = document.querySelectorAll('.kpi-val');
+    if (kpis.length >= 5) {
+      kpis[0].textContent = (data.total_leads || 0).toLocaleString();
+      kpis[1].textContent = data.hot_leads || 0;
+      kpis[2].textContent = formatAED(data.pipeline_value_aed || 0);
+      kpis[3].textContent = data.won_this_month || 0;
+      // emails scraped — use contact count
+      kpis[4].textContent = (data.contacted_today || 0).toLocaleString();
+    }
+  } catch (err) {
+    console.error('KPI load error:', err);
+  }
+}
+
+// ---- Load Hot Leads Table ----
+async function loadHotLeads(filters = {}) {
+  try {
+    let query = sb.from('hot_leads_ranked').select('*').limit(20);
+    if (filters.emirate) query = query.eq('emirate', filters.emirate);
+    if (filters.status) query = query.eq('status', filters.status);
+    if (filters.minScore) query = query.gte('lead_score', filters.minScore);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    renderLeadsTable(data || []);
+  } catch (err) {
+    console.error('Hot leads load error:', err);
+  }
+}
+
+function renderLeadsTable(leads) {
+  const tbody = document.querySelector('.leads-table tbody');
+  if (!tbody) return;
+  tbody.innerHTML = leads.map(l => `
+    <tr onclick="showLeadDetail(${l.id})" style="cursor:pointer;">
+      <td>
+        <div class="lead-name">${l.business_name || '—'}</div>
+        <div class="lead-sub">${l.dealer_type || 'used_car'} · ${l.city || ''}</div>
+      </td>
+      <td>${l.emirate || '—'}</td>
+      <td><span class="status-pill ${statusClass(l.status)}">${(l.status || 'new').replace(/_/g, ' ')}</span></td>
+      <td><span style="color:${scoreColor(l.lead_score)};font-weight:600;">${l.lead_score || 0}</span></td>
+      <td style="font-size:11px;color:var(--text-2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.why_behind || '—'}</td>
+      <td>${formatBudget(l.estimated_budget_tier)}</td>
+    </tr>
+  `).join('');
+}
+
+// ---- Load Pipeline Counts ----
+async function loadPipelineCounts() {
+  try {
+    const { data, error } = await sb.from('pipeline_stage_counts').select('*');
+    if (error) throw error;
+    const panel = document.querySelector('.pipeline-stages');
+    if (!panel || !data) return;
+    panel.innerHTML = data.map(s => `
+      <div class="pipeline-stage">
+        <div class="ps-header">
+          <span class="ps-name">${(s.status || '').replace(/_/g, ' ')}</span>
+          <span class="ps-count">${s.lead_count || 0}</span>
+        </div>
+        <div class="ps-bar"><div class="ps-fill" style="width:${Math.min((s.lead_count || 0) * 5, 100)}%;"></div></div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Pipeline load error:', err);
+  }
+}
+
+// ---- Load Activity Feed (Realtime) ----
+async function loadActivityFeed() {
+  try {
+    const { data, error } = await sb.from('activities')
+      .select('*, leads(business_name)')
+      .order('created_at', { ascending: false })
+      .limit(10);
+    if (error) throw error;
+
+    const feed = document.querySelector('.activity-list');
+    if (!feed || !data) return;
+    feed.innerHTML = data.map(a => {
+      const iconMap = { email: '@', call: '📞', note: '✎', stage_change: '→', system: '⚡', proposal: '✓', meeting: '📅', whatsapp: '💬' };
+      const colorMap = { email: 'rgba(74,144,232,0.1)', call: 'rgba(61,203,130,0.1)', note: 'rgba(201,168,76,0.1)', system: 'rgba(224,82,82,0.1)', proposal: 'rgba(61,203,130,0.1)', stage_change: 'rgba(155,114,207,0.1)', meeting: 'rgba(74,144,232,0.1)', whatsapp: 'rgba(61,203,130,0.1)' };
+      return `
+        <div class="activity-item">
+          <div class="act-icon" style="background:${colorMap[a.activity_type] || 'rgba(155,152,144,0.1)'};">${iconMap[a.activity_type] || '⚡'}</div>
+          <div class="act-body">
+            <div class="act-title">${a.leads?.business_name || ''} — ${a.title || a.activity_type}</div>
+            <div class="act-sub">${a.notes || a.email_subject || ''}</div>
+          </div>
+          <div class="act-time">${timeAgo(a.created_at)}</div>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    console.error('Activity feed error:', err);
+  }
+}
+
+// ---- Load Scraping Status ----
+async function loadScrapingStatus() {
+  try {
+    const { data, error } = await sb.from('scraping_jobs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5);
+    if (error) throw error;
+    // Update scraping panel if exists
+    const panel = document.querySelector('.scraping-status-list');
+    if (panel && data) {
+      panel.innerHTML = data.map(j => `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(155,152,144,0.08);">
+          <span style="font-size:11px;color:var(--text-1);">${j.job_name || j.search_query || 'Scraping run'}</span>
+          <span style="font-size:10px;color:${j.status === 'complete' ? 'var(--green)' : 'var(--orange)'};">${j.status} · ${j.leads_inserted || 0} leads</span>
+        </div>
+      `).join('');
+    }
+  } catch (err) {
+    console.error('Scraping status error:', err);
+  }
+}
+
+// ---- Navigation ----
+function showLeadsView() {
+  window.location.href = 'UAE_AutoCRM_Dashboard_connected.html';
+}
+function showPipelineView() {
+  window.location.href = 'UAE_AutoCRM_Dashboard_connected.html';
+}
+function showLeadDetail(leadId) {
+  window.location.href = 'UAE_AutoCRM_LeadDetail_connected.html?id=' + leadId;
+}
+
+// ---- Realtime Subscriptions ----
+function setupRealtime() {
+  sb.channel('leads-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload) => {
+      console.log('Lead change:', payload);
+      loadDashboardKPIs();
+      loadHotLeads();
+      loadPipelineCounts();
+    })
+    .subscribe();
+
+  sb.channel('activities-changes')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activities' }, () => {
+      loadActivityFeed();
+    })
+    .subscribe();
+}
+
+// ---- Init ----
+document.addEventListener('DOMContentLoaded', () => {
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+    console.warn('AutoIQ: Configure SUPABASE_URL and SUPABASE_ANON_KEY to connect to backend');
+    return;
+  }
+  loadDashboardKPIs();
+  loadHotLeads();
+  loadPipelineCounts();
+  loadActivityFeed();
+  loadScrapingStatus();
+  setupRealtime();
+});
+</script>
+
+</body>
+</html>
