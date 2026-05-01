@@ -1,0 +1,213 @@
+{
+  "name": "02 - Daily Email Sequence Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily 9AM Dubai",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "leads",
+        "returnAll": false,
+        "limit": 30,
+        "filterType": "string",
+        "filterString": "status=eq.ready_to_pitch&email_sequence_stage=eq.0&email_primary=not.is.null&ai_analyzed_at=not.is.null"
+      },
+      "id": "fetch-leads",
+      "name": "Fetch Ready Leads",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [470, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Process Each Lead",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/functions/v1/generate-email",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ lead_id: $json.id, email_step: 1, agent_name: 'AutoIQ Sales' }) }}"
+      },
+      "id": "generate-email",
+      "name": "Generate AI Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [910, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Process Each Lead').item.json.preferred_outreach_email || $('Process Each Lead').item.json.email_primary }}",
+        "subject": "={{ $json.email.subject }}",
+        "message": "={{ $json.email.body }}",
+        "options": {}
+      },
+      "id": "send-gmail",
+      "name": "Send via Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [1130, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "CONFIGURE_ME",
+          "name": "Gmail OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads",
+        "matchingColumns": ["id"],
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Process Each Lead').item.json.id }}",
+            "email_sequence_stage": 1,
+            "status": "contacted",
+            "last_contacted": "={{ $now.toISO() }}",
+            "last_contacted_channel": "email",
+            "next_followup_date": "={{ $today.plus({ days: 3 }).toISODate() }}"
+          }
+        }
+      },
+      "id": "update-lead",
+      "name": "Update Lead Status",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1350, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "activities",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('Process Each Lead').item.json.id }}",
+            "activity_type": "email",
+            "title": "Cold outreach email sent",
+            "email_subject": "={{ $('Generate AI Email').item.json.email.subject }}",
+            "email_status": "sent"
+          }
+        }
+      },
+      "id": "log-activity",
+      "name": "Log Email Activity",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1570, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "wait-1s",
+      "name": "Wait 1s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1790, 300]
+    }
+  ],
+  "connections": {
+    "Daily 9AM Dubai": {
+      "main": [
+        [{ "node": "Fetch Ready Leads", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Ready Leads": {
+      "main": [
+        [{ "node": "Process Each Lead", "type": "main", "index": 0 }]
+      ]
+    },
+    "Process Each Lead": {
+      "main": [
+        [{ "node": "Generate AI Email", "type": "main", "index": 0 }]
+      ]
+    },
+    "Generate AI Email": {
+      "main": [
+        [{ "node": "Send via Gmail", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send via Gmail": {
+      "main": [
+        [{ "node": "Update Lead Status", "type": "main", "index": 0 }]
+      ]
+    },
+    "Update Lead Status": {
+      "main": [
+        [{ "node": "Log Email Activity", "type": "main", "index": 0 }]
+      ]
+    },
+    "Log Email Activity": {
+      "main": [
+        [{ "node": "Wait 1s", "type": "main", "index": 0 }]
+      ]
+    },
+    "Wait 1s": {
+      "main": [
+        [{ "node": "Process Each Lead", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "timezone": "Asia/Dubai"
+  }
+}

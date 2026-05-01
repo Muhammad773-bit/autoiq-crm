@@ -1,0 +1,227 @@
+{
+  "name": "03 - Follow-up Sequence (Day 3, 7, 14)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily 10AM Dubai",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "leads",
+        "returnAll": false,
+        "limit": 50,
+        "filterType": "string",
+        "filterString": "status=eq.contacted&email_sequence_stage=lt.3&email_replied=eq.false&next_followup_date=lte.today&email_bounce=eq.false"
+      },
+      "id": "fetch-followup-leads",
+      "name": "Fetch Follow-up Leads",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [470, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Process Each Lead",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $input.first().json;\nconst nextStep = (lead.email_sequence_stage || 0) + 1;\nconst isMaxed = nextStep >= 4;\nconst nextFollowupDays = { 2: 4, 3: 7 };\nconst daysToAdd = nextFollowupDays[nextStep] || 45;\n\nreturn [{\n  json: {\n    lead_id: lead.id,\n    email_step: nextStep,\n    is_maxed: isMaxed,\n    days_to_add: daysToAdd,\n    email_to: lead.preferred_outreach_email || lead.email_primary\n  }\n}];"
+      },
+      "id": "calculate-step",
+      "name": "Calculate Next Step",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [910, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/functions/v1/generate-email",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ lead_id: $json.lead_id, email_step: $json.email_step }) }}"
+      },
+      "id": "generate-followup",
+      "name": "Generate Follow-up Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1130, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Calculate Next Step').item.json.email_to }}",
+        "subject": "={{ $json.email.subject }}",
+        "message": "={{ $json.email.body }}",
+        "options": {}
+      },
+      "id": "send-gmail",
+      "name": "Send via Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [1350, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "CONFIGURE_ME",
+          "name": "Gmail OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const step = $('Calculate Next Step').first().json;\nconst isMaxed = step.is_maxed;\nconst nextStep = step.email_step;\nconst nextDate = new Date();\nnextDate.setDate(nextDate.getDate() + step.days_to_add);\n\nreturn [{\n  json: {\n    lead_id: step.lead_id,\n    email_sequence_stage: nextStep,\n    status: isMaxed ? 'recycle' : 'contacted',\n    next_followup_date: nextDate.toISOString().split('T')[0],\n    followup_increment: 1\n  }\n}];"
+      },
+      "id": "prepare-update",
+      "name": "Prepare Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1570, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads",
+        "matchingColumns": ["id"],
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.lead_id }}",
+            "email_sequence_stage": "={{ $json.email_sequence_stage }}",
+            "status": "={{ $json.status }}",
+            "next_followup_date": "={{ $json.next_followup_date }}",
+            "last_contacted": "={{ $now.toISO() }}",
+            "last_contacted_channel": "email"
+          }
+        }
+      },
+      "id": "update-lead",
+      "name": "Update Lead",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1790, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "activities",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('Calculate Next Step').item.json.lead_id }}",
+            "activity_type": "email",
+            "title": "=Follow-up email #{{ $('Calculate Next Step').item.json.email_step }} sent",
+            "email_status": "sent"
+          }
+        }
+      },
+      "id": "log-activity",
+      "name": "Log Activity",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2010, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Supabase"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 10AM Dubai": {
+      "main": [
+        [{ "node": "Fetch Follow-up Leads", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Follow-up Leads": {
+      "main": [
+        [{ "node": "Process Each Lead", "type": "main", "index": 0 }]
+      ]
+    },
+    "Process Each Lead": {
+      "main": [
+        [{ "node": "Calculate Next Step", "type": "main", "index": 0 }]
+      ]
+    },
+    "Calculate Next Step": {
+      "main": [
+        [{ "node": "Generate Follow-up Email", "type": "main", "index": 0 }]
+      ]
+    },
+    "Generate Follow-up Email": {
+      "main": [
+        [{ "node": "Send via Gmail", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send via Gmail": {
+      "main": [
+        [{ "node": "Prepare Update", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prepare Update": {
+      "main": [
+        [{ "node": "Update Lead", "type": "main", "index": 0 }]
+      ]
+    },
+    "Update Lead": {
+      "main": [
+        [{ "node": "Log Activity", "type": "main", "index": 0 }]
+      ]
+    },
+    "Log Activity": {
+      "main": [
+        [{ "node": "Process Each Lead", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "timezone": "Asia/Dubai"
+  }
+}

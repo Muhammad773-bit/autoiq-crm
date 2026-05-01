@@ -1,0 +1,252 @@
+{
+  "name": "04 - Apify Scraper → Supabase Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily 2AM Dubai",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "path": "run-scraper",
+        "httpMethod": "POST"
+      },
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/compass~crawler-google-places/runs",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "={{ $env.APIFY_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"searchStringsArray\": [\n    \"used car dealer Dubai\",\n    \"car showroom Dubai\",\n    \"auto trader Sharjah\",\n    \"used cars Abu Dhabi\",\n    \"car dealer Ajman\",\n    \"car showroom Ras Al Khaimah\"\n  ],\n  \"maxCrawledPlacesPerSearch\": 30,\n  \"language\": \"en\",\n  \"countryCode\": \"ae\"\n}"
+      },
+      "id": "start-apify",
+      "name": "Start Apify Crawl",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [500, 400]
+    },
+    {
+      "parameters": {
+        "amount": 180,
+        "unit": "seconds"
+      },
+      "id": "wait-180s",
+      "name": "Wait 3 min",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [720, 400]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.apify.com/v2/acts/compass~crawler-google-places/runs/last/dataset/items",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "={{ $env.APIFY_TOKEN }}"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            },
+            {
+              "name": "limit",
+              "value": "200"
+            }
+          ]
+        }
+      },
+      "id": "fetch-results",
+      "name": "Fetch Apify Results",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [940, 400]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-results",
+      "name": "Process Each Result",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [1160, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\n// Map Apify fields to our leads schema\nconst emirateMap = {\n  'Dubai': 'Dubai',\n  'Sharjah': 'Sharjah',\n  'Abu Dhabi': 'Abu Dhabi',\n  'Ajman': 'Ajman',\n  'Ras al-Khaimah': 'Ras Al Khaimah',\n  'Fujairah': 'Fujairah',\n  'Umm al-Quwain': 'Umm Al Quwain'\n};\n\nlet emirate = 'Dubai';\nconst addr = (item.address || item.city || '').toLowerCase();\nfor (const [key, val] of Object.entries(emirateMap)) {\n  if (addr.includes(key.toLowerCase())) {\n    emirate = val;\n    break;\n  }\n}\n\nconst lead = {\n  business_name: item.title || item.name || 'Unknown Business',\n  dealer_type: 'used_car',\n  emirate: emirate,\n  city: item.city || '',\n  area: item.neighborhood || '',\n  address: item.address || item.street || '',\n  phone: item.phone || item.phoneUnformatted || '',\n  website: item.website || item.url || '',\n  google_maps_url: item.url || '',\n  google_maps_exists: true,\n  google_rating: item.totalScore || 0,\n  google_reviews: item.reviewsCount || 0,\n  latitude: item.location?.lat || null,\n  longitude: item.location?.lng || null,\n  source: 'apify_google_maps',\n  scraping_status: 'pending'\n};\n\nreturn [{ json: lead }];"
+      },
+      "id": "map-fields",
+      "name": "Map to Lead Schema",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1380, 400]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "leads",
+        "returnAll": false,
+        "limit": 1,
+        "filterType": "string",
+        "filterString": "=business_name=eq.{{ encodeURIComponent($json.business_name) }}&emirate=eq.{{ $json.emirate }}"
+      },
+      "id": "check-duplicate",
+      "name": "Check Duplicate",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1600, 400],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.length === 0 || ($json && !$json.id) }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-not-duplicate",
+      "name": "If Not Duplicate",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1820, 400]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "leads",
+        "columns": {
+          "mappingMode": "autoMapInputData"
+        }
+      },
+      "id": "insert-lead",
+      "name": "Insert Lead",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2040, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_WEBHOOK_URL || 'http://localhost:5678' }}/webhook/new-lead",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      },
+      "id": "trigger-enrichment",
+      "name": "Trigger Enrichment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [2260, 300],
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "Daily 2AM Dubai": {
+      "main": [
+        [{ "node": "Start Apify Crawl", "type": "main", "index": 0 }]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [{ "node": "Start Apify Crawl", "type": "main", "index": 0 }]
+      ]
+    },
+    "Start Apify Crawl": {
+      "main": [
+        [{ "node": "Wait 3 min", "type": "main", "index": 0 }]
+      ]
+    },
+    "Wait 3 min": {
+      "main": [
+        [{ "node": "Fetch Apify Results", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Apify Results": {
+      "main": [
+        [{ "node": "Process Each Result", "type": "main", "index": 0 }]
+      ]
+    },
+    "Process Each Result": {
+      "main": [
+        [{ "node": "Map to Lead Schema", "type": "main", "index": 0 }]
+      ]
+    },
+    "Map to Lead Schema": {
+      "main": [
+        [{ "node": "Check Duplicate", "type": "main", "index": 0 }]
+      ]
+    },
+    "Check Duplicate": {
+      "main": [
+        [{ "node": "If Not Duplicate", "type": "main", "index": 0 }]
+      ]
+    },
+    "If Not Duplicate": {
+      "main": [
+        [{ "node": "Insert Lead", "type": "main", "index": 0 }],
+        [{ "node": "Process Each Result", "type": "main", "index": 0 }]
+      ]
+    },
+    "Insert Lead": {
+      "main": [
+        [{ "node": "Trigger Enrichment", "type": "main", "index": 0 }]
+      ]
+    },
+    "Trigger Enrichment": {
+      "main": [
+        [{ "node": "Process Each Result", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "timezone": "Asia/Dubai"
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "name": "05 - Weekly Manager Report",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 20 * * 0"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Sunday 8PM Dubai",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "pipeline_stage_counts",
+        "returnAll": true
+      },
+      "id": "pipeline-counts",
+      "name": "Pipeline Stage Counts",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [500, 200],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "dashboard_kpis",
+        "returnAll": true
+      },
+      "id": "dashboard-kpis",
+      "name": "Dashboard KPIs",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [500, 400],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "team_members",
+        "returnAll": true,
+        "filterType": "string",
+        "filterString": "is_active=eq.true"
+      },
+      "id": "agent-data",
+      "name": "Agent Performance",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [500, 600],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const pipeline = $('Pipeline Stage Counts').all().map(i => i.json);\nconst kpis = $('Dashboard KPIs').first().json;\nconst agents = $('Agent Performance').all().map(i => i.json);\n\nconst pipelineRows = pipeline.map(p => \n  `<tr><td style=\"padding:8px 12px;border-bottom:1px solid #eee;\">${p.status}</td><td style=\"padding:8px 12px;border-bottom:1px solid #eee;text-align:center;\">${p.lead_count}</td><td style=\"padding:8px 12px;border-bottom:1px solid #eee;text-align:center;\">${p.avg_score || '-'}</td></tr>`\n).join('');\n\nconst agentRows = agents.map(a =>\n  `<tr><td style=\"padding:8px 12px;border-bottom:1px solid #eee;\">${a.full_name}</td><td style=\"padding:8px 12px;border-bottom:1px solid #eee;text-align:center;\">${a.current_lead_count || 0}</td><td style=\"padding:8px 12px;border-bottom:1px solid #eee;text-align:center;\">${a.role}</td></tr>`\n).join('');\n\nconst html = `\n<!DOCTYPE html>\n<html>\n<head><style>\n  body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }\n  .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }\n  .header { background: #0E0F11; color: #C9A84C; padding: 24px; text-align: center; }\n  .header h1 { margin: 0; font-size: 22px; }\n  .header p { margin: 4px 0 0; color: #9B9890; font-size: 13px; }\n  .kpis { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: #eee; }\n  .kpi { background: #fff; padding: 16px; text-align: center; }\n  .kpi-val { font-size: 24px; font-weight: 700; color: #0E0F11; }\n  .kpi-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }\n  .section { padding: 20px 24px; }\n  .section h2 { font-size: 14px; color: #333; margin: 0 0 12px; }\n  table { width: 100%; border-collapse: collapse; }\n  th { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 12px; border-bottom: 2px solid #eee; text-align: left; }\n  .footer { padding: 16px 24px; text-align: center; background: #f9f9f9; color: #999; font-size: 11px; }\n</style></head>\n<body>\n<div class=\"container\">\n  <div class=\"header\">\n    <h1>AUTOIQ × Weekly Report</h1>\n    <p>Week ending ${new Date().toLocaleDateString('en-AE', { year: 'numeric', month: 'long', day: 'numeric' })}</p>\n  </div>\n  <div class=\"kpis\">\n    <div class=\"kpi\"><div class=\"kpi-val\">${kpis.total_leads || 0}</div><div class=\"kpi-label\">Total Leads</div></div>\n    <div class=\"kpi\"><div class=\"kpi-val\">${kpis.hot_leads || 0}</div><div class=\"kpi-label\">Hot Leads</div></div>\n    <div class=\"kpi\"><div class=\"kpi-val\">${kpis.won_this_month || 0}</div><div class=\"kpi-label\">Won This Month</div></div>\n  </div>\n  <div class=\"kpis\" style=\"border-top:1px solid #eee;\">\n    <div class=\"kpi\"><div class=\"kpi-val\">AED ${((kpis.pipeline_value_aed || 0) / 1000).toFixed(0)}K</div><div class=\"kpi-label\">Pipeline Value</div></div>\n    <div class=\"kpi\"><div class=\"kpi-val\">${kpis.followups_due_today || 0}</div><div class=\"kpi-label\">Follow-ups Due</div></div>\n    <div class=\"kpi\"><div class=\"kpi-val\">${kpis.followups_overdue || 0}</div><div class=\"kpi-label\">Overdue</div></div>\n  </div>\n  <div class=\"section\">\n    <h2>Pipeline Breakdown</h2>\n    <table><thead><tr><th>Stage</th><th style=\"text-align:center;\">Count</th><th style=\"text-align:center;\">Avg Score</th></tr></thead><tbody>${pipelineRows}</tbody></table>\n  </div>\n  <div class=\"section\">\n    <h2>Agent Overview</h2>\n    <table><thead><tr><th>Agent</th><th style=\"text-align:center;\">Active Leads</th><th style=\"text-align:center;\">Role</th></tr></thead><tbody>${agentRows}</tbody></table>\n  </div>\n  <div class=\"footer\">AutoIQ CRM &mdash; Generated automatically</div>\n</div>\n</body></html>\n`;\n\nreturn [{ json: { html, subject: `AutoIQ Weekly Report - ${new Date().toLocaleDateString('en-AE')}` } }];"
+      },
+      "id": "build-report",
+      "name": "Build HTML Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [780, 400]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $env.MANAGER_EMAIL || 'manager@company.com' }}",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "send-report",
+      "name": "Send Report Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [1020, 400],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "CONFIGURE_ME",
+          "name": "Gmail OAuth2"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Sunday 8PM Dubai": {
+      "main": [
+        [
+          { "node": "Pipeline Stage Counts", "type": "main", "index": 0 },
+          { "node": "Dashboard KPIs", "type": "main", "index": 0 },
+          { "node": "Agent Performance", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Pipeline Stage Counts": {
+      "main": [
+        [{ "node": "Build HTML Report", "type": "main", "index": 0 }]
+      ]
+    },
+    "Dashboard KPIs": {
+      "main": [
+        [{ "node": "Build HTML Report", "type": "main", "index": 0 }]
+      ]
+    },
+    "Agent Performance": {
+      "main": [
+        [{ "node": "Build HTML Report", "type": "main", "index": 0 }]
+      ]
+    },
+    "Build HTML Report": {
+      "main": [
+        [{ "node": "Send Report Email", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "timezone": "Asia/Dubai"
+  }
+}

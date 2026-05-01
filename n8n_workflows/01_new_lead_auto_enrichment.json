@@ -1,0 +1,209 @@
+{
+  "name": "01 - New Lead Auto Enrichment",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "new-lead",
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "HEAD",
+        "url": "={{ $json.website }}",
+        "options": {
+          "timeout": 8000
+        }
+      },
+      "id": "check-website",
+      "name": "Check Website",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [470, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ws-1",
+              "name": "website_status",
+              "value": "={{ $json.statusCode >= 200 && $json.statusCode < 400 ? 'live' : 'dead' }}",
+              "type": "string"
+            },
+            {
+              "id": "ws-2",
+              "name": "lead_id",
+              "value": "={{ $('Webhook Trigger').item.json.id }}",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "set-website-status",
+      "name": "Set Website Status",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads",
+        "filterType": "column",
+        "matchingColumns": ["id"],
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.lead_id }}",
+            "website_status": "={{ $json.website_status }}",
+            "scraping_status": "complete"
+          }
+        }
+      },
+      "id": "update-lead-status",
+      "name": "Update Lead Website Status",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [910, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/functions/v1/analyze-lead",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "lead_id",
+              "value": "={{ $('Webhook Trigger').item.json.id }}"
+            }
+          ]
+        }
+      },
+      "id": "trigger-ai-analysis",
+      "name": "Trigger AI Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1130, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Round-robin agent assignment by emirate\nconst emirate = $('Webhook Trigger').first().json.emirate;\nconst agentMap = {\n  'Dubai': 1,\n  'Sharjah': 2,\n  'Abu Dhabi': 3,\n  'Ajman': 2,\n  'Ras Al Khaimah': 3,\n  'Fujairah': 3,\n  'Umm Al Quwain': 2\n};\nreturn [{ json: { agent_id: agentMap[emirate] || 1, lead_id: $('Webhook Trigger').first().json.id } }];"
+      },
+      "id": "assign-agent",
+      "name": "Assign Agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1350, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "follow_up_tasks",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $json.lead_id }}",
+            "agent_id": "={{ $json.agent_id }}",
+            "task_type": "first_contact",
+            "title": "First contact with new lead",
+            "due_date": "={{ $today.toISODate() }}",
+            "priority": "high"
+          }
+        }
+      },
+      "id": "create-task",
+      "name": "Create Follow-up Task",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1570, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Lead enrichment triggered' }) }}"
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1790, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [{ "node": "Check Website", "type": "main", "index": 0 }]
+      ]
+    },
+    "Check Website": {
+      "main": [
+        [{ "node": "Set Website Status", "type": "main", "index": 0 }]
+      ]
+    },
+    "Set Website Status": {
+      "main": [
+        [{ "node": "Update Lead Website Status", "type": "main", "index": 0 }]
+      ]
+    },
+    "Update Lead Website Status": {
+      "main": [
+        [{ "node": "Trigger AI Analysis", "type": "main", "index": 0 }]
+      ]
+    },
+    "Trigger AI Analysis": {
+      "main": [
+        [{ "node": "Assign Agent", "type": "main", "index": 0 }]
+      ]
+    },
+    "Assign Agent": {
+      "main": [
+        [{ "node": "Create Follow-up Task", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Follow-up Task": {
+      "main": [
+        [{ "node": "Respond", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "timezone": "Asia/Dubai"
+  }
+}
