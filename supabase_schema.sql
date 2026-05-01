@@ -762,13 +762,24 @@ ORDER BY created_at ASC;
 -- Today's follow-ups
 CREATE OR REPLACE VIEW todays_followups AS
 SELECT
-  ft.*,
+  ft.id,
+  ft.lead_id,
+  ft.agent_id,
+  ft.task_type,
+  ft.title,
+  ft.notes AS task_notes,
+  ft.due_date,
+  ft.due_time,
+  ft.priority,
+  ft.status AS task_status,
+  ft.completed_at,
+  ft.created_at,
   l.business_name,
   l.phone,
   l.whatsapp,
   l.preferred_outreach_email,
   l.lead_score,
-  l.status,
+  l.status AS lead_status,
   l.emirate,
   tm.full_name AS agent_name
 FROM follow_up_tasks ft
